@@ -55,7 +55,7 @@ function deleteTask(id: string | number): void {
             <TodoProjectItemCreationForm @submit="createTask" />
         </div>
         <div class="project-item">
-            <TodoProjectList :tasks="store.state.tasks" />
+            <TodoProjectList :tasks="store.state.tasks" @update-task="updateTask" @delete-task="deleteTask" />
         </div>
     </div>
 </template>

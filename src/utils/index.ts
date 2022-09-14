@@ -20,3 +20,14 @@ export function getSessionStorageObject(key: string) {
         return null;
     }
 }
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function debounce<T extends Function>(func: T, wait = 100) {
+    let timeout: number;
+    const callable = (...args: any) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+
+    return <T>(<any>callable);
+}

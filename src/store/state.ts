@@ -1,7 +1,13 @@
+import type { Project, Task } from "@/interfaces";
+
+import { getSessionStorageObject } from "@/utils";
+
 export interface State {
-    count: number;
+    project: Project;
+    tasks: Task[];
 }
 
 export const state: State = {
-    count: 0,
+    project: getSessionStorageObject("project"),
+    tasks: getSessionStorageObject("tasks") || [],
 };

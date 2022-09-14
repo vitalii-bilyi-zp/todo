@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import type { Task } from "@/interfaces";
+
 interface Props {
-    label: string;
+    task: Task;
 }
 const props = defineProps<Props>();
 </script>
 
 <template>
     <div class="todo-list-item">
-        <p class="item-label">{{ props.label }}</p>
+        <p class="item-label">{{ props.task.name }}</p>
     </div>
 </template>
 

@@ -1,5 +1,12 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+interface Props {
+    title: string;
+}
+const props = withDefaults(defineProps<Props>(), {
+    title: "My Todo List",
+});
+</script>
 
-<template>Header</template>
+<template>{{ props.title }}</template>
 
 <style scoped></style>

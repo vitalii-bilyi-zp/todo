@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import TodoProjectListItem from "@/components/TodoProjectListItem.vue";
 
+import type { Task } from "@/interfaces";
+
 interface Props {
-    items: string[];
+    tasks: Task[];
 }
 const props = withDefaults(defineProps<Props>(), {
-    items: () => [],
+    tasks: () => [],
 });
 </script>
 
 <template>
     <div class="menu">
         <ul class="menu-list">
-            <li v-for="(item, index) in props.items" :key="index">
-                <TodoProjectListItem :label="item" />
+            <li v-for="(task, index) in props.tasks" :key="index">
+                <TodoProjectListItem :task="task" />
             </li>
         </ul>
     </div>

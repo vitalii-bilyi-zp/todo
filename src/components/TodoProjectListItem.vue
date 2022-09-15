@@ -26,12 +26,17 @@ const itemLabelHtml = computed<string>(() => {
     return props.task.name.replace(regExp, '<span class="search-term">$&</span>');
 });
 
-function toggleTask(): void {
-    emit("updateTask", {
-        ...props.task,
-        isDone: !props.task.isDone,
-    });
-}
+const taskIsDone = computed({
+    get() {
+        return props.task.isDone;
+    },
+    set(newValue) {
+        emit("updateTask", {
+            ...props.task,
+            isDone: newValue,
+        });
+    },
+});
 
 function deleteTask(): void {
     emit("deleteTask", props.task.id);
@@ -39,7 +44,10 @@ function deleteTask(): void {
 </script>
 
 <template>
-    <div class="todo-list-item" :class="{ 'is-done': props.task.isDone }" @click="toggleTask">
+    <div class="todo-list-item" :class="{ 'is-done': taskIsDone }">
+        <label class="checkbox">
+            <input type="checkbox" v-model="taskIsDone" />
+        </label>
         <p class="item-label" v-html="itemLabelHtml"></p>
         <div class="item-actions">
             <button class="button is-small is-danger is-outlined" @click="deleteTask">
@@ -62,16 +70,18 @@ function deleteTask(): void {
     border: 1px solid #e7eaef;
     box-shadow: 0px 1px 3px 0px rgb(5 10 23 / 7%);
     overflow: hidden;
-    cursor: pointer;
-
-    &:hover {
-        box-shadow: 0px 1px 3px 0px rgb(5 10 23 / 20%);
-    }
 
     &.is-done {
         .item-label {
             text-decoration: line-through;
         }
+    }
+
+    .checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
     }
 }
 

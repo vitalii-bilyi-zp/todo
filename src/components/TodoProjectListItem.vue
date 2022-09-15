@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { Task } from "@/interfaces";
+import type { Ref } from "vue";
+import { inject, computed } from "vue";
+import { searchTermKey } from "@/keys";
 
 interface Props {
     task: Task;
@@ -11,6 +14,17 @@ interface Emits {
     (e: "deleteTask", id: string | number): void;
 }
 const emit = defineEmits<Emits>();
+
+const searchTerm = inject<Ref<string | null>>(searchTermKey);
+const itemLabelHtml = computed<string>(() => {
+    if (!searchTerm?.value) {
+        return props.task.name;
+    }
+
+    const query: string = searchTerm.value as string;
+    const regExp = new RegExp(query, "i");
+    return props.task.name.replace(regExp, '<span class="search-term">$&</span>');
+});
 
 function toggleTask(): void {
     emit("updateTask", {
@@ -26,7 +40,7 @@ function deleteTask(): void {
 
 <template>
     <div class="todo-list-item" :class="{ 'is-done': props.task.isDone }" @click="toggleTask">
-        <p class="item-label">{{ props.task.name }}</p>
+        <p class="item-label" v-html="itemLabelHtml"></p>
         <div class="item-actions">
             <button class="button is-small is-danger is-outlined" @click="deleteTask">
                 <span class="icon is-small">
@@ -66,5 +80,9 @@ function deleteTask(): void {
     margin-right: 20px;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    :deep(.search-term) {
+        font-weight: 500;
+    }
 }
 </style>

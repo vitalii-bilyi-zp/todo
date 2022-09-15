@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import TodoProjectHeader from "@/components/TodoProjectHeader.vue";
 import TodoProjectSearchForm from "@/components/TodoProjectSearchForm.vue";
-import TodoProjectItemCreationForm from "@/components/TodoProjectItemCreationForm.vue";
+import TodoProjectTaskCreationForm from "@/components/TodoProjectTaskCreationForm.vue";
 import TodoProjectList from "@/components/TodoProjectList.vue";
 
 import { useStore } from "@/store";
@@ -9,7 +9,8 @@ import { ActionTypes } from "@/store/actions";
 
 import type { Project, Task } from "@/interfaces";
 import type { Ref } from "vue";
-import { onBeforeMount, ref, computed } from "vue";
+import { onBeforeMount, ref, computed, provide } from "vue";
+import { searchTermKey } from "@/keys";
 
 const store = useStore();
 
@@ -48,6 +49,7 @@ function deleteTask(id: string | number): void {
 }
 
 const searchTerm: Ref<string | null> = ref(null);
+provide(searchTermKey, searchTerm);
 function setSearchTerm(term: string | null): void {
     searchTerm.value = term;
 }
@@ -73,7 +75,7 @@ const filteredTasks = computed<Task[]>(() => {
             <TodoProjectSearchForm @search="setSearchTerm" />
         </div>
         <div class="project-item">
-            <TodoProjectItemCreationForm @submit="createTask" />
+            <TodoProjectTaskCreationForm @submit="createTask" />
         </div>
         <div class="project-item">
             <TodoProjectList :tasks="filteredTasks" @update-task="updateTask" @delete-task="deleteTask" />

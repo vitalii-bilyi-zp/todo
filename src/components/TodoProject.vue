@@ -86,9 +86,26 @@ const filteredTasks = computed<Task[]>(() => {
     }
 
     const query: string = searchTerm.value as string;
-    return groupedTasks.value.filter((task) => {
-        return task.name.toLowerCase().indexOf(query.toLowerCase()) >= 0;
-    });
+
+    const filterTasksRecursively = (tasks: Task[]): Task[] => {
+        return tasks.reduce((prev: Task[], curr: Task) => {
+            if (curr.name.toLowerCase().indexOf(query.toLowerCase()) >= 0) {
+                prev.push(curr);
+            }
+
+            const subtasks = filterTasksRecursively(curr.subtasks || []);
+            if (subtasks.length) {
+                prev.push({
+                    ...curr,
+                    subtasks,
+                });
+            }
+
+            return prev;
+        }, []);
+    };
+
+    return filterTasksRecursively(groupedTasks.value);
 });
 </script>
 

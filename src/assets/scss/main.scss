@@ -3,5 +3,79 @@
 @import "node_modules/bulma/sass/form/_all";
 @import "node_modules/bulma/sass/elements/icon";
 @import "node_modules/bulma/sass/elements/button";
-@import "node_modules/bulma/sass/components/menu";
 @import "node_modules/bulma/sass/components/dropdown";
+
+.todo-list {
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+
+    li:not(:last-child) {
+        border-bottom: 1px solid #e7eaef;
+    }
+}
+
+.todo-list-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 15px;
+
+    &.is-done {
+        .item-text {
+            .task-name {
+                text-decoration: line-through;
+            }
+        }
+    }
+
+    .item-checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5em;
+        margin-right: 15px;
+    }
+
+    .item-text {
+        flex-grow: 1;
+        margin-right: 20px;
+
+        &:not(.is-editing) {
+            overflow: hidden;
+        }
+
+        .task-name {
+            min-height: 2.5em;
+            padding-top: calc(0.5em - 1px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        :deep(.search-term) {
+            font-weight: 500;
+        }
+    }
+
+    .dropdown {
+        &:not(:last-child) {
+            margin-right: 5px;
+        }
+    }
+
+    .item-form {
+        width: 100%;
+    }
+}
+
+.todo-list-item-details {
+    padding: 0 15px;
+    background-color: #eeeef4;
+    height: 0;
+    opacity: 0;
+
+    &.is-active {
+        padding: 10px 15px;
+        height: auto;
+        opacity: 1;
+    }
+}

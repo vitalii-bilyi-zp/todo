@@ -11,10 +11,15 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
+    (e: "createSubtask", task: Task): void;
     (e: "updateTask", task: Task): void;
     (e: "deleteTask", id: string | number): void;
 }
 const emit = defineEmits<Emits>();
+
+function createSubtask(task: Task): void {
+    emit("createSubtask", task);
+}
 
 function updateTask(task: Task): void {
     emit("updateTask", task);
@@ -26,13 +31,16 @@ function deleteTask(id: string | number): void {
 </script>
 
 <template>
-    <div class="menu">
-        <ul class="menu-list">
-            <li v-for="task in props.tasks" :key="task.id">
-                <TodoProjectListItem :task="task" @update-task="updateTask" @delete-task="deleteTask" />
-            </li>
-        </ul>
-    </div>
+    <ul class="todo-list">
+        <li v-for="task in props.tasks" :key="task.id">
+            <TodoProjectListItem
+                :task="task"
+                @create-subtask="createSubtask"
+                @update-task="updateTask"
+                @delete-task="deleteTask"
+            />
+        </li>
+    </ul>
 </template>
 
-<style scoped></style>
+<style scoped lang="scss"></style>

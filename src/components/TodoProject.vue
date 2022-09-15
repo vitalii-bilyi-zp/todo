@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import TodoProjectHeader from "@/components/TodoProjectHeader.vue";
 import TodoProjectSearchForm from "@/components/TodoProjectSearchForm.vue";
-import TodoProjectTaskCreationForm from "@/components/TodoProjectTaskCreationForm.vue";
+import TodoProjectTaskForm from "@/components/TodoProjectTaskForm.vue";
 import TodoProjectList from "@/components/TodoProjectList.vue";
 
 import { useStore } from "@/store";
@@ -35,8 +35,11 @@ function createTask(name: string): void {
         id: Date.now(),
         name: name,
         isDone: false,
-        subtasks: [],
     };
+    store.dispatch(ActionTypes.CREATE_TASK, task);
+}
+
+function createSubtask(task: Task): void {
     store.dispatch(ActionTypes.CREATE_TASK, task);
 }
 
@@ -54,13 +57,36 @@ function setSearchTerm(term: string | null): void {
     searchTerm.value = term;
 }
 
+const groupedTasks = computed<Task[]>(() => {
+    const parentsGroup = store.state.tasks.reduce((prev: Record<string | number, Task[]>, curr: Task) => {
+        const parentId = curr.parentId || "root";
+        const group = prev[parentId] || [];
+
+        prev[parentId] = [...group, curr];
+
+        return prev;
+    }, {});
+
+    const collectSubtasksRecursively = (task: Task): Task => {
+        const subtasks = parentsGroup[task.id] || [];
+
+        return {
+            ...task,
+            subtasks: subtasks.map((task: Task) => collectSubtasksRecursively(task)),
+        };
+    };
+
+    const rootTasks = parentsGroup["root"] || [];
+    return rootTasks.map((task: Task) => collectSubtasksRecursively(task));
+});
+
 const filteredTasks = computed<Task[]>(() => {
     if (!searchTerm.value) {
-        return store.getters.computedTasks;
+        return groupedTasks.value;
     }
 
     const query: string = searchTerm.value as string;
-    return store.getters.computedTasks.filter((task) => {
+    return groupedTasks.value.filter((task) => {
         return task.name.toLowerCase().indexOf(query.toLowerCase()) >= 0;
     });
 });
@@ -75,10 +101,15 @@ const filteredTasks = computed<Task[]>(() => {
             <TodoProjectSearchForm @search="setSearchTerm" />
         </div>
         <div class="project-item">
-            <TodoProjectTaskCreationForm @submit="createTask" />
+            <TodoProjectTaskForm @submit="createTask" />
         </div>
-        <div class="project-item">
-            <TodoProjectList :tasks="filteredTasks" @update-task="updateTask" @delete-task="deleteTask" />
+        <div class="project-item" v-if="filteredTasks.length">
+            <TodoProjectList
+                :tasks="filteredTasks"
+                @create-subtask="createSubtask"
+                @update-task="updateTask"
+                @delete-task="deleteTask"
+            />
         </div>
     </div>
 </template>

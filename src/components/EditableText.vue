@@ -11,6 +11,7 @@ const props = defineProps<Props>();
 interface Emits {
     (e: "update:modelValue", newValue: string | null): void;
     (e: "submit"): void;
+    (e: "blur"): void;
 }
 const emit = defineEmits<Emits>();
 
@@ -20,6 +21,10 @@ function onInput(event: Event) {
 
 function onSubmit(): void {
     emit("submit");
+}
+
+function onBlur(): void {
+    emit("blur");
 }
 
 const input = ref<HTMLInputElement | null>(null);
@@ -47,7 +52,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="editable-text">
+    <div class="editable-text" :class="{ 'is-editing': props.isEditing }">
         <div v-if="props.isEditing" class="field">
             <div class="control">
                 <input
@@ -58,6 +63,7 @@ onMounted(() => {
                     type="text"
                     @input="onInput"
                     @keyup.enter="onSubmit"
+                    @blur="onBlur"
                 />
             </div>
             <p v-if="props.error" class="help is-danger">{{ props.error }}</p>

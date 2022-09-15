@@ -44,22 +44,28 @@ const menuState: Ref<boolean> = ref(false);
 function toggleMenuState(): void {
     menuState.value = !menuState.value;
 }
+// eslint-disable-next-line @typescript-eslint/ban-types
+function closeMenuWithAction<T extends Function>(func: T): void {
+    func();
+    menuState.value = false;
+}
 
 const newTaskName: Ref<string> = ref(props.task.name);
 const taskNameError: Ref<string> = ref("");
 const editState: Ref<boolean> = ref(false);
-function toggleEditState(): void {
-    if (editState.value) {
-        stopEditing();
-    } else {
-        startEditing();
-    }
-}
 function startEditing(): void {
+    if (editState.value) {
+        return;
+    }
+
     newTaskName.value = props.task.name;
     editState.value = true;
 }
 function stopEditing(): void {
+    if (!editState.value) {
+        return;
+    }
+
     if (!newTaskName.value) {
         taskNameError.value = "This field is mandatory";
         return;
@@ -79,9 +85,11 @@ function deleteTask(): void {
 
 <template>
     <div class="todo-list-item" :class="{ 'is-done': taskIsDone }">
-        <label class="checkbox">
-            <input type="checkbox" v-model="taskIsDone" />
-        </label>
+        <div class="item-checkbox">
+            <label class="checkbox">
+                <input type="checkbox" v-model="taskIsDone" />
+            </label>
+        </div>
 
         <EditableText
             class="item-text"
@@ -90,6 +98,7 @@ function deleteTask(): void {
             v-model="newTaskName"
             @update:modelValue="taskNameError = ''"
             @submit="stopEditing"
+            @blur="stopEditing"
         >
             <p class="task-name" v-html="taskNameHtml"></p>
         </EditableText>
@@ -117,7 +126,7 @@ function deleteTask(): void {
                             <span>Add subtask</span>
                         </span>
                     </a>
-                    <a class="dropdown-item" :class="{ 'is-active': editState }" @click="toggleEditState">
+                    <a class="dropdown-item" @click="closeMenuWithAction(startEditing)">
                         <span class="icon-text">
                             <span class="icon">
                                 <i class="mdi mdi-pencil"></i>
@@ -125,7 +134,7 @@ function deleteTask(): void {
                             <span>Edit task</span>
                         </span>
                     </a>
-                    <a class="dropdown-item" @click="deleteTask">
+                    <a class="dropdown-item" @click="closeMenuWithAction(deleteTask)">
                         <span class="icon-text">
                             <span class="icon">
                                 <i class="mdi mdi-delete"></i>
@@ -142,14 +151,13 @@ function deleteTask(): void {
 <style scoped lang="scss">
 .todo-list-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     padding: 15px 20px;
     margin: 6px 0px;
     background-color: #fff;
     border-radius: 4px;
     border: 1px solid #e7eaef;
     box-shadow: 0px 1px 3px 0px rgb(5 10 23 / 7%);
-    // overflow: hidden;
 
     &.is-done {
         .item-text {
@@ -158,21 +166,27 @@ function deleteTask(): void {
             }
         }
     }
+}
 
-    .checkbox {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px;
-    }
+.item-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5em;
+    margin-right: 15px;
 }
 
 .item-text {
     flex-grow: 1;
     margin-right: 20px;
-    overflow: hidden;
+
+    &:not(.is-editing) {
+        overflow: hidden;
+    }
 
     .task-name {
+        min-height: 2.5em;
+        padding-top: 0.5em;
         overflow: hidden;
         text-overflow: ellipsis;
     }
@@ -181,26 +195,4 @@ function deleteTask(): void {
         font-weight: 500;
     }
 }
-
-// .item-actions {
-//     display: flex;
-//     align-items: center;
-
-//     .button {
-//         .icon {
-//             opacity: 0.7;
-//         }
-
-//         &:hover,
-//         &.is-active {
-//             .icon {
-//                 opacity: 1;
-//             }
-//         }
-
-//         & + .button {
-//             margin-left: 5px;
-//         }
-//     }
-// }
 </style>

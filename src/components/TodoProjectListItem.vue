@@ -40,11 +40,16 @@ const taskIsDone = computed<boolean>({
     },
 });
 
+const menuState: Ref<boolean> = ref(false);
+function toggleMenuState(): void {
+    menuState.value = !menuState.value;
+}
+
 const newTaskName: Ref<string> = ref(props.task.name);
 const taskNameError: Ref<string> = ref("");
-const isEditing: Ref<boolean> = ref(false);
-function toggleEditing(): void {
-    if (isEditing.value) {
+const editState: Ref<boolean> = ref(false);
+function toggleEditState(): void {
+    if (editState.value) {
         stopEditing();
     } else {
         startEditing();
@@ -52,7 +57,7 @@ function toggleEditing(): void {
 }
 function startEditing(): void {
     newTaskName.value = props.task.name;
-    isEditing.value = true;
+    editState.value = true;
 }
 function stopEditing(): void {
     if (!newTaskName.value) {
@@ -60,7 +65,7 @@ function stopEditing(): void {
         return;
     }
 
-    isEditing.value = false;
+    editState.value = false;
     emit("updateTask", {
         ...props.task,
         name: newTaskName.value,
@@ -80,7 +85,7 @@ function deleteTask(): void {
 
         <EditableText
             class="item-text"
-            :is-editing="isEditing"
+            :is-editing="editState"
             :error="taskNameError"
             v-model="newTaskName"
             @update:modelValue="taskNameError = ''"
@@ -89,17 +94,47 @@ function deleteTask(): void {
             <p class="task-name" v-html="taskNameHtml"></p>
         </EditableText>
 
-        <div class="item-actions">
-            <button class="button is-text" :class="{ 'is-active': isEditing }" @click="toggleEditing">
-                <span class="icon">
-                    <i class="mdi mdi-pencil"></i>
-                </span>
-            </button>
-            <button class="button is-text" @click="deleteTask">
-                <span class="icon">
-                    <i class="mdi mdi-delete"></i>
-                </span>
-            </button>
+        <div class="dropdown is-right" :class="{ 'is-active': menuState }">
+            <div class="dropdown-trigger">
+                <button
+                    class="button is-text"
+                    aria-haspopup="true"
+                    aria-controls="dropdown-menu"
+                    @click="toggleMenuState"
+                >
+                    <span class="icon">
+                        <i class="mdi mdi-dots-vertical" aria-hidden="true"></i>
+                    </span>
+                </button>
+            </div>
+            <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                <div class="dropdown-content">
+                    <a class="dropdown-item">
+                        <span class="icon-text">
+                            <span class="icon">
+                                <i class="mdi mdi-plus-thick"></i>
+                            </span>
+                            <span>Add subtask</span>
+                        </span>
+                    </a>
+                    <a class="dropdown-item" :class="{ 'is-active': editState }" @click="toggleEditState">
+                        <span class="icon-text">
+                            <span class="icon">
+                                <i class="mdi mdi-pencil"></i>
+                            </span>
+                            <span>Edit task</span>
+                        </span>
+                    </a>
+                    <a class="dropdown-item" @click="deleteTask">
+                        <span class="icon-text">
+                            <span class="icon">
+                                <i class="mdi mdi-delete"></i>
+                            </span>
+                            <span>Delete task</span>
+                        </span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -114,7 +149,7 @@ function deleteTask(): void {
     border-radius: 4px;
     border: 1px solid #e7eaef;
     box-shadow: 0px 1px 3px 0px rgb(5 10 23 / 7%);
-    overflow: hidden;
+    // overflow: hidden;
 
     &.is-done {
         .item-text {
@@ -147,25 +182,25 @@ function deleteTask(): void {
     }
 }
 
-.item-actions {
-    display: flex;
-    align-items: center;
+// .item-actions {
+//     display: flex;
+//     align-items: center;
 
-    .button {
-        .icon {
-            opacity: 0.7;
-        }
+//     .button {
+//         .icon {
+//             opacity: 0.7;
+//         }
 
-        &:hover,
-        &.is-active {
-            .icon {
-                opacity: 1;
-            }
-        }
+//         &:hover,
+//         &.is-active {
+//             .icon {
+//                 opacity: 1;
+//             }
+//         }
 
-        & + .button {
-            margin-left: 5px;
-        }
-    }
-}
+//         & + .button {
+//             margin-left: 5px;
+//         }
+//     }
+// }
 </style>

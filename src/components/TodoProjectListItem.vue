@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import EditableText from "@/components/EditableText.vue";
+
 import type { Task } from "@/interfaces";
 import type { Ref } from "vue";
-import { inject, computed } from "vue";
+import { inject, computed, ref } from "vue";
 import { searchTermKey } from "@/keys";
 
 interface Props {
@@ -16,7 +18,7 @@ interface Emits {
 const emit = defineEmits<Emits>();
 
 const searchTerm = inject<Ref<string | null>>(searchTermKey);
-const itemLabelHtml = computed<string>(() => {
+const taskNameHtml = computed<string>(() => {
     if (!searchTerm?.value) {
         return props.task.name;
     }
@@ -26,17 +28,44 @@ const itemLabelHtml = computed<string>(() => {
     return props.task.name.replace(regExp, '<span class="search-term">$&</span>');
 });
 
-const taskIsDone = computed({
+const taskIsDone = computed<boolean>({
     get() {
-        return props.task.isDone;
+        return !!props.task.isDone;
     },
-    set(newValue) {
+    set(newValue: boolean) {
         emit("updateTask", {
             ...props.task,
             isDone: newValue,
         });
     },
 });
+
+const newTaskName: Ref<string> = ref(props.task.name);
+const taskNameError: Ref<string> = ref("");
+const isEditing: Ref<boolean> = ref(false);
+function toggleEditing(): void {
+    if (isEditing.value) {
+        stopEditing();
+    } else {
+        startEditing();
+    }
+}
+function startEditing(): void {
+    newTaskName.value = props.task.name;
+    isEditing.value = true;
+}
+function stopEditing(): void {
+    if (!newTaskName.value) {
+        taskNameError.value = "This field is mandatory";
+        return;
+    }
+
+    isEditing.value = false;
+    emit("updateTask", {
+        ...props.task,
+        name: newTaskName.value,
+    });
+}
 
 function deleteTask(): void {
     emit("deleteTask", props.task.id);
@@ -48,10 +77,26 @@ function deleteTask(): void {
         <label class="checkbox">
             <input type="checkbox" v-model="taskIsDone" />
         </label>
-        <p class="item-label" v-html="itemLabelHtml"></p>
+
+        <EditableText
+            class="item-text"
+            :is-editing="isEditing"
+            :error="taskNameError"
+            v-model="newTaskName"
+            @update:modelValue="taskNameError = ''"
+            @submit="stopEditing"
+        >
+            <p class="task-name" v-html="taskNameHtml"></p>
+        </EditableText>
+
         <div class="item-actions">
-            <button class="button is-small is-danger is-outlined" @click="deleteTask">
-                <span class="icon is-small">
+            <button class="button is-text" :class="{ 'is-active': isEditing }" @click="toggleEditing">
+                <span class="icon">
+                    <i class="mdi mdi-pencil"></i>
+                </span>
+            </button>
+            <button class="button is-text" @click="deleteTask">
+                <span class="icon">
                     <i class="mdi mdi-delete"></i>
                 </span>
             </button>
@@ -72,8 +117,10 @@ function deleteTask(): void {
     overflow: hidden;
 
     &.is-done {
-        .item-label {
-            text-decoration: line-through;
+        .item-text {
+            .task-name {
+                text-decoration: line-through;
+            }
         }
     }
 
@@ -85,14 +132,40 @@ function deleteTask(): void {
     }
 }
 
-.item-label {
+.item-text {
     flex-grow: 1;
     margin-right: 20px;
     overflow: hidden;
-    text-overflow: ellipsis;
+
+    .task-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     :deep(.search-term) {
         font-weight: 500;
+    }
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+
+    .button {
+        .icon {
+            opacity: 0.7;
+        }
+
+        &:hover,
+        &.is-active {
+            .icon {
+                opacity: 1;
+            }
+        }
+
+        & + .button {
+            margin-left: 5px;
+        }
     }
 }
 </style>

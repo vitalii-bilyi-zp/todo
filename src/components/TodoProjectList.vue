@@ -28,7 +28,7 @@ function deleteTask(id: string | number): void {
 <template>
     <div class="menu">
         <ul class="menu-list">
-            <li v-for="(task, index) in props.tasks" :key="index">
+            <li v-for="task in props.tasks" :key="task.id">
                 <TodoProjectListItem :task="task" @update-task="updateTask" @delete-task="deleteTask" />
             </li>
         </ul>

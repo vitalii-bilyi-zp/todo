@@ -14,7 +14,7 @@ import { isProject, isTask } from "@/interfaces/guards";
 
 import { type Ref, onBeforeMount, ref, computed, provide, watch } from "vue";
 import { type Draggable, useDraggable } from "@/composables/draggable";
-import { exportData } from "@/utils";
+import { exportData, moveInArray, insertToArray } from "@/utils";
 
 const store = useStore();
 
@@ -39,7 +39,7 @@ function createTask(name: string): void {
         id: Date.now().toString(),
         name: name,
         isDone: false,
-        order: groupedTasks.value.length,
+        index: groupedTasks.value.length,
     };
     store.dispatch(ActionTypes.CREATE_TASK, task);
 }
@@ -53,6 +53,19 @@ function updateTask(task: Task): void {
 }
 
 function deleteTask(id: string): void {
+    const taskData = findTaskWithNeighboursRecursively(id, groupedTasks.value);
+    if (taskData) {
+        const targetList = taskData.neighbours.slice();
+        targetList.splice(taskData.task.index, 1);
+        targetList.forEach((task: Task, index: number) => {
+            store.dispatch(ActionTypes.UPDATE_TASK, {
+                ...task,
+                index,
+                subtasks: [],
+            });
+        });
+    }
+
     store.dispatch(ActionTypes.DELETE_TASK, id);
 }
 
@@ -71,6 +84,10 @@ const groupedTasks = computed<Task[]>(() => {
 
         return prev;
     }, {});
+
+    for (const id in parentsGroup) {
+        parentsGroup[id].sort((a: Task, b: Task) => a.index - b.index);
+    }
 
     const collectSubtasksRecursively = (task: Task): Task => {
         const subtasks = parentsGroup[task.id] || [];
@@ -115,9 +132,71 @@ const filteredTasks = computed<Task[]>(() => {
 
 const list = ref<HTMLElement | null>(null);
 const { dragResponse }: Draggable = useDraggable(list.value);
+type TaskWithNeighbours = { task: Task; neighbours: Task[] };
 watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
-    console.log("TEST", prevId, nextId);
+    const prevTaskData = findTaskWithNeighboursRecursively(prevId, groupedTasks.value);
+    const nextTaskData = findTaskWithNeighboursRecursively(nextId, groupedTasks.value);
+
+    if (!prevTaskData || !nextTaskData) {
+        return;
+    }
+
+    if (prevTaskData.task.parentId === nextTaskData.task.parentId) {
+        updateOneLevelTasks(prevTaskData, nextTaskData);
+    } else {
+        updateDifferentLevelsTasks(prevTaskData, nextTaskData);
+    }
 });
+function findTaskWithNeighboursRecursively(id: string, tasks: Task[]): TaskWithNeighbours | null {
+    for (const task of tasks) {
+        if (task.id === id) {
+            return { task, neighbours: tasks };
+        }
+        const subtasksResponse = findTaskWithNeighboursRecursively(id, task.subtasks || []);
+        if (subtasksResponse) {
+            return subtasksResponse;
+        }
+    }
+
+    return null;
+}
+function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours): void {
+    const targetList = nextTaskData.neighbours.slice();
+    moveInArray(targetList, prevTaskData.task.index, nextTaskData.task.index);
+    targetList.forEach((task: Task, index: number) => {
+        store.dispatch(ActionTypes.UPDATE_TASK, {
+            ...task,
+            index,
+            subtasks: [],
+        });
+    });
+}
+function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours): void {
+    const prevList = prevTaskData.neighbours.slice();
+    const nextList = nextTaskData.neighbours.slice();
+    const prevTask = {
+        ...prevTaskData.task,
+        parentId: nextTaskData.task.parentId,
+    };
+
+    prevList.splice(prevTaskData.task.index, 1);
+    prevList.forEach((task: Task, index: number) => {
+        store.dispatch(ActionTypes.UPDATE_TASK, {
+            ...task,
+            index,
+            subtasks: [],
+        });
+    });
+
+    insertToArray(nextList, nextTaskData.task.index + 1, prevTask);
+    nextList.forEach((task: Task, index: number) => {
+        store.dispatch(ActionTypes.UPDATE_TASK, {
+            ...task,
+            index,
+            subtasks: [],
+        });
+    });
+}
 
 function exportProject(): void {
     const jsonData = JSON.stringify({

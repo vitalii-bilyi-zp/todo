@@ -9,5 +9,5 @@ export interface Task {
     name: string;
     isDone?: boolean;
     subtasks?: Task[];
-    order: number;
+    index: number;
 }

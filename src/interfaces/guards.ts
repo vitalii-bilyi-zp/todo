@@ -5,5 +5,5 @@ export function isProject(object: any): object is Project {
 }
 
 export function isTask(object: any): object is Task {
-    return "id" in object && "name" in object && "order" in object;
+    return "id" in object && "name" in object && "index" in object;
 }

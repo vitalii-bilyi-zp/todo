@@ -109,7 +109,7 @@ function createSubtask(name: string): void {
         parentId: props.task.id,
         name: name,
         isDone: false,
-        order: props.task.subtasks?.length || 0,
+        index: props.task.subtasks?.length || 0,
     };
     emit("createSubtask", task);
 }

@@ -39,3 +39,26 @@ export function exportData(content: string, fileName: string, contentType: strin
     a.download = fileName;
     a.click();
 }
+
+export function moveInArray(arr: Array<any>, oldIndex: number, newIndex: number): void {
+    if (newIndex >= arr.length) {
+        let k = newIndex - arr.length + 1;
+        while (k--) {
+            arr.push(null);
+        }
+    }
+    arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
+}
+
+export function insertToArray(arr: Array<any>, index: number, item: any): void {
+    if (index < arr.length) {
+        arr.splice(index, 0, item);
+        return;
+    }
+
+    let k = index - arr.length + 1;
+    while (k--) {
+        arr.push(null);
+    }
+    arr[index] = item;
+}

@@ -31,3 +31,11 @@ export function debounce<T extends Function>(func: T, wait = 100) {
 
     return <T>(<any>callable);
 }
+
+export function exportData(content: string, fileName: string, contentType: string): void {
+    const a = document.createElement("a");
+    const file = new Blob([content], { type: contentType });
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+}

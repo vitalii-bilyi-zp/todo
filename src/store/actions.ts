@@ -7,6 +7,7 @@ import type { Project, Task } from "@/interfaces";
 
 export enum ActionTypes {
     SET_PROJECT = "SET_PROJECT",
+    SET_TASKS = "SET_TASKS",
     CREATE_TASK = "CREATE_TASK",
     UPDATE_TASK = "UPDATE_TASK",
     DELETE_TASK = "DELETE_TASK",
@@ -22,6 +23,7 @@ type AugmentedActionContext = {
 
 export interface Actions {
     [ActionTypes.SET_PROJECT]({ commit }: AugmentedActionContext, payload: Project): void;
+    [ActionTypes.SET_TASKS]({ commit }: AugmentedActionContext, payload: Task[]): void;
     [ActionTypes.CREATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
     [ActionTypes.UPDATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
     [ActionTypes.DELETE_TASK]({ commit }: AugmentedActionContext, payload: string): void;
@@ -30,6 +32,10 @@ export interface Actions {
 export const actions: ActionTree<State, State> & Actions = {
     [ActionTypes.SET_PROJECT]({ commit }, payload: Project) {
         commit(MutationTypes.SET_PROJECT, payload);
+    },
+
+    [ActionTypes.SET_TASKS]({ commit }, payload: Task[]) {
+        commit(MutationTypes.SET_TASKS, payload);
     },
 
     [ActionTypes.CREATE_TASK]({ commit }, payload: Task) {

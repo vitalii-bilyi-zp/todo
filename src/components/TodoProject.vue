@@ -4,13 +4,17 @@ import TodoProjectSearchForm from "@/components/TodoProjectSearchForm.vue";
 import TodoProjectTaskForm from "@/components/TodoProjectTaskForm.vue";
 import TodoProjectList from "@/components/TodoProjectList.vue";
 
+import { searchTermKey } from "@/keys";
+
 import { useStore } from "@/store";
 import { ActionTypes } from "@/store/actions";
 
 import type { Project, Task } from "@/interfaces";
-import { type Ref, onBeforeMount, ref, computed, provide, reactive, watch } from "vue";
+import { isProject, isTask } from "@/interfaces/guards";
+
+import { type Ref, onBeforeMount, ref, computed, provide, watch } from "vue";
 import { type Draggable, useDraggable } from "@/composables/draggable";
-import { searchTermKey } from "@/keys";
+import { exportData } from "@/utils";
 
 const store = useStore();
 
@@ -114,6 +118,60 @@ const { dragResponse }: Draggable = useDraggable(list.value);
 watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
     console.log("TEST", prevId, nextId);
 });
+
+function exportProject(): void {
+    const jsonData = JSON.stringify({
+        project: store.state.project,
+        tasks: store.state.tasks,
+    });
+    exportData(jsonData, `${store.state.project.name}.json`, "application/json");
+}
+
+const fileInput = ref<HTMLInputElement | null>(null);
+function importProject(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const file: File | null = target.files && target.files.length ? target.files[0] : null;
+
+    if (!file) {
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        try {
+            const object = JSON.parse(reader.result as string);
+            if (validateProjectStructure(object)) {
+                store.dispatch(ActionTypes.SET_PROJECT, object.project);
+                store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
+                if (fileInput.value) {
+                    fileInput.value.value = "";
+                }
+                alert("Project was imported successfully");
+            } else {
+                alert("Invalid file format");
+            }
+        } catch {
+            alert("Invalid file format");
+        }
+    };
+    reader.onerror = () => {
+        alert("Sorry, there was an unexpected error, please try again");
+    };
+    reader.readAsText(file, "UTF-8");
+}
+function validateProjectStructure(object: any): boolean {
+    try {
+        if (!object.project || !isProject(object.project)) {
+            return false;
+        }
+        if (object.tasks) {
+            return object.tasks.every(isTask);
+        }
+        return true;
+    } catch {
+        return false;
+    }
+}
 </script>
 
 <template>
@@ -135,6 +193,35 @@ watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => 
                 @delete-task="deleteTask"
             />
         </div>
+        <div class="project-item">
+            <div class="project-actions">
+                <button class="button" @click="exportProject">
+                    <span class="icon">
+                        <i class="mdi mdi-download"></i>
+                    </span>
+                    <span>Export project</span>
+                </button>
+
+                <div class="file is-white">
+                    <label class="file-label">
+                        <input
+                            ref="fileInput"
+                            class="file-input"
+                            type="file"
+                            name="resume"
+                            accept="application/json"
+                            @change="importProject"
+                        />
+                        <span class="file-cta">
+                            <span class="file-icon">
+                                <i class="mdi mdi-upload"></i>
+                            </span>
+                            <span class="file-label">Import project</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -142,6 +229,41 @@ watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => 
 .project-item {
     &:not(:last-child) {
         margin-bottom: 20px;
+    }
+}
+
+.project-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .button {
+        margin-right: 20px;
+    }
+
+    .file-label {
+        border-radius: 4px;
+
+        .file-cta {
+            border-color: hsl(0deg, 0%, 86%);
+            color: hsl(0deg, 0%, 21%);
+        }
+
+        &:hover {
+            .file-cta {
+                background-color: hsl(0deg, 0%, 100%);
+                border-color: hsl(0deg, 0%, 71%);
+                color: hsl(0deg, 0%, 21%);
+            }
+        }
+
+        &:active {
+            .file-cta {
+                background-color: hsl(0deg, 0%, 100%);
+                border-color: hsl(0deg, 0%, 29%);
+                color: hsl(0deg, 0%, 21%);
+            }
+        }
     }
 }
 </style>

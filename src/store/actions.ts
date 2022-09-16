@@ -1,8 +1,7 @@
 import type { ActionContext, ActionTree, CommitOptions } from "vuex";
 
 import type { State } from "@/store/state";
-import type { Mutations } from "@/store/mutations";
-import { MutationTypes } from "@/store/mutations";
+import { type Mutations, MutationTypes } from "@/store/mutations";
 
 import type { Project, Task } from "@/interfaces";
 

@@ -1,17 +1,10 @@
 import type { CommitOptions, DispatchOptions } from "vuex";
 import { createStore, Store as VuexStore } from "vuex";
 
-import type { State } from "@/store/state";
-import { state } from "@/store/state";
-
-import type { Actions } from "@/store/actions";
-import { actions } from "@/store/actions";
-
-import type { Mutations } from "@/store/mutations";
-import { mutations } from "@/store/mutations";
-
-import type { Getters } from "@/store/getters";
-import { getters } from "@/store/getters";
+import { type State, state } from "@/store/state";
+import { type Actions, actions } from "@/store/actions";
+import { type Mutations, mutations } from "@/store/mutations";
+import { type Getters, getters } from "@/store/getters";
 
 export const store = createStore<State>({
     state,

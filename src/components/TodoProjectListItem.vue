@@ -3,8 +3,7 @@ import EditableText from "@/components/EditableText.vue";
 import TodoProjectListItemSubtaskForm from "@/components/TodoProjectListItemSubtaskForm.vue";
 
 import type { Task } from "@/interfaces";
-import type { Ref } from "vue";
-import { inject, computed, ref } from "vue";
+import { type Ref, inject, computed, ref } from "vue";
 import { searchTermKey } from "@/keys";
 
 interface Props {
@@ -201,7 +200,7 @@ function createSubtask(name: string): void {
                         />
                     </div>
                 </li>
-                <li v-for="task in props.task.subtasks" :key="task.id">
+                <li v-for="task in props.task.subtasks" :key="task.id" :data-id="task.id" draggable="true">
                     <TodoProjectListItem
                         :task="task"
                         @create-subtask="emit('createSubtask', $event)"

@@ -8,8 +8,7 @@ import { useStore } from "@/store";
 import { ActionTypes } from "@/store/actions";
 
 import type { Project, Task } from "@/interfaces";
-import type { Ref } from "vue";
-import { onBeforeMount, ref, computed, provide } from "vue";
+import { type Ref, onBeforeMount, ref, computed, provide } from "vue";
 import { searchTermKey } from "@/keys";
 
 const store = useStore();

@@ -49,6 +49,9 @@ function toggleMenuState(): void {
 // eslint-disable-next-line @typescript-eslint/ban-types
 function closeMenuWithAction<T extends Function>(func: T): void {
     func();
+    closeMenu();
+}
+function closeMenu(): void {
     menuState.value = false;
 }
 
@@ -133,7 +136,7 @@ function createSubtask(name: string): void {
                 <p class="task-name" v-html="taskNameHtml"></p>
             </EditableText>
 
-            <div class="dropdown is-right" :class="{ 'is-active': menuState }">
+            <div class="dropdown is-right" :class="{ 'is-active': menuState }" v-click-outside="closeMenu">
                 <div class="dropdown-trigger">
                     <button
                         class="button is-text"

@@ -1,12 +1,13 @@
 export interface Project {
-    id: string | number;
+    id: string;
     name: string;
 }
 
 export interface Task {
-    id: string | number;
-    parentId?: string | number;
+    id: string;
+    parentId?: string;
     name: string;
     isDone?: boolean;
     subtasks?: Task[];
+    order: number;
 }

@@ -10,8 +10,28 @@
     border-radius: 4px;
     border: 1px solid #d9d9d9;
 
-    li:not(:last-child) {
-        border-bottom: 1px solid #e7eaef;
+    li {
+        &:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        &:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #e7eaef;
+        }
+
+        &[draggable="true"] {
+            cursor: move;
+
+            &.over {
+                box-shadow: 0 0 0 0.125em rgb(72 95 199 / 25%);
+            }
+        }
     }
 }
 
@@ -68,14 +88,11 @@
 }
 
 .todo-list-item-details {
-    padding: 0 15px;
+    display: none;
+    padding: 10px 15px;
     background-color: #eeeef4;
-    height: 0;
-    opacity: 0;
 
     &.is-active {
-        padding: 10px 15px;
-        height: auto;
-        opacity: 1;
+        display: block;
     }
 }

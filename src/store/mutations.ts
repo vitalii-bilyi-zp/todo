@@ -16,7 +16,7 @@ export interface Mutations {
     [MutationTypes.SET_PROJECT](state: State, payload: Project): void;
     [MutationTypes.CREATE_TASK](state: State, payload: Task): void;
     [MutationTypes.UPDATE_TASK](state: State, payload: Task): void;
-    [MutationTypes.DELETE_TASK](state: State, payload: string | number): void;
+    [MutationTypes.DELETE_TASK](state: State, payload: string): void;
 }
 
 export const mutations: MutationTree<State> & Mutations = {
@@ -40,7 +40,7 @@ export const mutations: MutationTree<State> & Mutations = {
         setSessionStorageObject("tasks", state.tasks);
     },
 
-    [MutationTypes.DELETE_TASK](state: State, payload: string | number) {
+    [MutationTypes.DELETE_TASK](state: State, payload: string) {
         const taskIndex: number = state.tasks.findIndex((item) => item.id === payload);
         if (taskIndex === -1) {
             return;

@@ -3,10 +3,6 @@ import TodoProjectListItem from "@/components/TodoProjectListItem.vue";
 
 import type { Task } from "@/interfaces";
 
-import { ref } from "vue";
-
-import { type Draggable, useDraggable } from "@/composables/draggable";
-
 interface Props {
     tasks: Task[];
 }
@@ -17,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 interface Emits {
     (e: "createSubtask", task: Task): void;
     (e: "updateTask", task: Task): void;
-    (e: "deleteTask", id: string | number): void;
+    (e: "deleteTask", id: string): void;
 }
 const emit = defineEmits<Emits>();
 
@@ -29,16 +25,13 @@ function updateTask(task: Task): void {
     emit("updateTask", task);
 }
 
-function deleteTask(id: string | number): void {
+function deleteTask(id: string): void {
     emit("deleteTask", id);
 }
-
-const list = ref<HTMLElement | null>(null);
-const { currentElement, newElement }: Draggable = useDraggable(list.value);
 </script>
 
 <template>
-    <ul ref="list" class="todo-list">
+    <ul class="todo-list">
         <li v-for="task in props.tasks" :key="task.id" :data-id="task.id" draggable="true">
             <TodoProjectListItem
                 :task="task"

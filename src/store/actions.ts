@@ -24,7 +24,7 @@ export interface Actions {
     [ActionTypes.SET_PROJECT]({ commit }: AugmentedActionContext, payload: Project): void;
     [ActionTypes.CREATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
     [ActionTypes.UPDATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
-    [ActionTypes.DELETE_TASK]({ commit }: AugmentedActionContext, payload: string | number): void;
+    [ActionTypes.DELETE_TASK]({ commit }: AugmentedActionContext, payload: string): void;
 }
 
 export const actions: ActionTree<State, State> & Actions = {
@@ -40,7 +40,7 @@ export const actions: ActionTree<State, State> & Actions = {
         commit(MutationTypes.UPDATE_TASK, payload);
     },
 
-    [ActionTypes.DELETE_TASK]({ commit }, payload: string | number) {
+    [ActionTypes.DELETE_TASK]({ commit }, payload: string) {
         commit(MutationTypes.DELETE_TASK, payload);
     },
 };

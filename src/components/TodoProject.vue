@@ -8,7 +8,8 @@ import { useStore } from "@/store";
 import { ActionTypes } from "@/store/actions";
 
 import type { Project, Task } from "@/interfaces";
-import { type Ref, onBeforeMount, ref, computed, provide } from "vue";
+import { type Ref, onBeforeMount, ref, computed, provide, reactive, watch } from "vue";
+import { type Draggable, useDraggable } from "@/composables/draggable";
 import { searchTermKey } from "@/keys";
 
 const store = useStore();
@@ -23,7 +24,7 @@ function initProject(): void {
     }
 
     const project: Project = {
-        id: Date.now(),
+        id: Date.now().toString(),
         name: "My Todo List",
     };
     store.dispatch(ActionTypes.SET_PROJECT, project);
@@ -31,9 +32,10 @@ function initProject(): void {
 
 function createTask(name: string): void {
     const task: Task = {
-        id: Date.now(),
+        id: Date.now().toString(),
         name: name,
         isDone: false,
+        order: groupedTasks.value.length,
     };
     store.dispatch(ActionTypes.CREATE_TASK, task);
 }
@@ -46,7 +48,7 @@ function updateTask(task: Task): void {
     store.dispatch(ActionTypes.UPDATE_TASK, task);
 }
 
-function deleteTask(id: string | number): void {
+function deleteTask(id: string): void {
     store.dispatch(ActionTypes.DELETE_TASK, id);
 }
 
@@ -57,7 +59,7 @@ function setSearchTerm(term: string | null): void {
 }
 
 const groupedTasks = computed<Task[]>(() => {
-    const parentsGroup = store.state.tasks.reduce((prev: Record<string | number, Task[]>, curr: Task) => {
+    const parentsGroup = store.state.tasks.reduce((prev: Record<string, Task[]>, curr: Task) => {
         const parentId = curr.parentId || "root";
         const group = prev[parentId] || [];
 
@@ -106,6 +108,12 @@ const filteredTasks = computed<Task[]>(() => {
 
     return filterTasksRecursively(groupedTasks.value);
 });
+
+const list = ref<HTMLElement | null>(null);
+const { dragResponse }: Draggable = useDraggable(list.value);
+watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
+    console.log("TEST", prevId, nextId);
+});
 </script>
 
 <template>
@@ -119,7 +127,7 @@ const filteredTasks = computed<Task[]>(() => {
         <div class="project-item">
             <TodoProjectTaskForm @submit="createTask" />
         </div>
-        <div class="project-item" v-if="filteredTasks.length">
+        <div v-if="filteredTasks.length" ref="list" class="project-item">
             <TodoProjectList
                 :tasks="filteredTasks"
                 @create-subtask="createSubtask"

@@ -14,7 +14,7 @@ const props = defineProps<Props>();
 interface Emits {
     (e: "createSubtask", task: Task): void;
     (e: "updateTask", task: Task): void;
-    (e: "deleteTask", id: string | number): void;
+    (e: "deleteTask", id: string): void;
 }
 const emit = defineEmits<Emits>();
 
@@ -105,10 +105,11 @@ function closeSubtaskForm(): void {
 
 function createSubtask(name: string): void {
     const task: Task = {
-        id: Date.now(),
+        id: Date.now().toString(),
         parentId: props.task.id,
         name: name,
         isDone: false,
+        order: props.task.subtasks?.length || 0,
     };
     emit("createSubtask", task);
 }

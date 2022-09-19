@@ -80,10 +80,13 @@ function deleteTask(id: string): void {
     store.dispatch(ActionTypes.DELETE_TASK, id);
 }
 
-const searchTerm: Ref<string | null> = ref(null);
+const searchTerm: Ref<string> = ref("");
 provide(searchTermKey, searchTerm);
-function setSearchTerm(term: string | null): void {
+function searchTasks(term: string): void {
     searchTerm.value = term;
+    if (!store.state.searchHistory.includes(term)) {
+        store.dispatch(ActionTypes.SET_SEARCH_HISTORY, [...store.state.searchHistory, term]);
+    }
 }
 
 const groupedTasks = computed<Task[]>(() => {
@@ -270,7 +273,7 @@ function validateProjectStructure(object: any): boolean {
             <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
         </div>
         <div class="project-item">
-            <TodoProjectSearchForm @search="setSearchTerm" />
+            <TodoProjectSearchForm :search-history="store.state.searchHistory" @search="searchTasks" />
         </div>
         <div class="project-item">
             <TodoProjectTaskForm @submit="createTask" />

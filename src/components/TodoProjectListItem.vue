@@ -18,7 +18,7 @@ interface Emits {
 }
 const emit = defineEmits<Emits>();
 
-const searchTerm = inject<Ref<string | null>>(searchTermKey);
+const searchTerm = inject<Ref<string>>(searchTermKey);
 const taskNameHtml = computed<string>(() => {
     if (!searchTerm?.value) {
         return props.task.name;
@@ -149,7 +149,7 @@ function createSubtask(name: string): void {
                         </span>
                     </button>
                 </div>
-                <div class="dropdown-menu" id="dropdown-menu" role="menu">
+                <div class="dropdown-menu" role="menu">
                     <div class="dropdown-content">
                         <a class="dropdown-item" @click="closeMenuWithAction(openSubtaskForm)">
                             <span class="icon-text">

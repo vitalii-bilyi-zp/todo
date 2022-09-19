@@ -11,6 +11,7 @@ export enum ActionTypes {
     CREATE_TASK = "CREATE_TASK",
     UPDATE_TASK = "UPDATE_TASK",
     DELETE_TASK = "DELETE_TASK",
+    SET_SEARCH_HISTORY = "SET_SEARCH_HISTORY",
 }
 
 type AugmentedActionContext = {
@@ -27,6 +28,7 @@ export interface Actions {
     [ActionTypes.CREATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
     [ActionTypes.UPDATE_TASK]({ commit }: AugmentedActionContext, payload: Task): void;
     [ActionTypes.DELETE_TASK]({ commit }: AugmentedActionContext, payload: string): void;
+    [ActionTypes.SET_SEARCH_HISTORY]({ commit }: AugmentedActionContext, payload: string[]): void;
 }
 
 export const actions: ActionTree<State, State> & Actions = {
@@ -48,5 +50,9 @@ export const actions: ActionTree<State, State> & Actions = {
 
     [ActionTypes.DELETE_TASK]({ commit }, payload: string) {
         commit(MutationTypes.DELETE_TASK, payload);
+    },
+
+    [ActionTypes.SET_SEARCH_HISTORY]({ commit }, payload: string[]) {
+        commit(MutationTypes.SET_SEARCH_HISTORY, payload);
     },
 };

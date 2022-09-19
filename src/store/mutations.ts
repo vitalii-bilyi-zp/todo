@@ -11,6 +11,7 @@ export enum MutationTypes {
     CREATE_TASK = "CREATE_TASK",
     UPDATE_TASK = "UPDATE_TASK",
     DELETE_TASK = "DELETE_TASK",
+    SET_SEARCH_HISTORY = "SET_SEARCH_HISTORY",
 }
 
 export interface Mutations {
@@ -19,6 +20,7 @@ export interface Mutations {
     [MutationTypes.CREATE_TASK](state: State, payload: Task): void;
     [MutationTypes.UPDATE_TASK](state: State, payload: Task): void;
     [MutationTypes.DELETE_TASK](state: State, payload: string): void;
+    [MutationTypes.SET_SEARCH_HISTORY](state: State, payload: string[]): void;
 }
 
 export const mutations: MutationTree<State> & Mutations = {
@@ -55,5 +57,10 @@ export const mutations: MutationTree<State> & Mutations = {
 
         state.tasks.splice(taskIndex, 1);
         setSessionStorageObject("tasks", state.tasks);
+    },
+
+    [MutationTypes.SET_SEARCH_HISTORY](state: State, payload: string[]) {
+        state.searchHistory = payload;
+        setSessionStorageObject("search-history", payload);
     },
 };

@@ -5,6 +5,7 @@ export interface Draggable {
         prevId: string;
         nextId: string;
     }>;
+    addDraggableElement: (id: string) => void;
 }
 
 export function useDraggable(root?: HTMLElement | null): Draggable {
@@ -15,32 +16,44 @@ export function useDraggable(root?: HTMLElement | null): Draggable {
         nextId: "",
     });
     const parent = root || document;
-    let draggableElements: NodeList | null = null;
+    let draggableElements: HTMLElement[] = [];
 
     onMounted(() => {
-        draggableElements = parent.querySelectorAll('[draggable="true"]');
-        [].forEach.call(draggableElements, (element: HTMLElement) => {
-            element.addEventListener("dragstart", handleDragStart);
-            // element.addEventListener("dragenter", handleDragEnter);
-            element.addEventListener("dragover", handleDragOver);
-            element.addEventListener("dragleave", handleDragLeave);
-            element.addEventListener("drop", handleDrop);
-            element.addEventListener("dragend", handleDragEnd);
-        });
+        draggableElements = Array.prototype.slice.call(parent.querySelectorAll<HTMLElement>('[draggable="true"]'));
+        draggableElements.forEach(setupEventHandlers);
     });
 
     onUnmounted(() => {
-        if (draggableElements) {
-            [].forEach.call(draggableElements, (element: HTMLElement) => {
-                element.removeEventListener("dragstart", handleDragStart);
-                // element.removeEventListener("dragenter", handleDragEnter);
-                element.removeEventListener("dragover", handleDragOver);
-                element.removeEventListener("dragleave", handleDragLeave);
-                element.removeEventListener("drop", handleDrop);
-                element.removeEventListener("dragend", handleDragEnd);
-            });
-        }
+        draggableElements.forEach(resetEventHandlers);
     });
+
+    function addDraggableElement(id: string) {
+        const element: HTMLElement | null = parent.querySelector(`[data-id="${id}"]`);
+        if (!element) {
+            return;
+        }
+
+        draggableElements.push(element);
+        setupEventHandlers(element);
+    }
+
+    function setupEventHandlers(element: HTMLElement) {
+        element.addEventListener("dragstart", handleDragStart);
+        // element.addEventListener("dragenter", handleDragEnter);
+        element.addEventListener("dragover", handleDragOver);
+        element.addEventListener("dragleave", handleDragLeave);
+        element.addEventListener("drop", handleDrop);
+        element.addEventListener("dragend", handleDragEnd);
+    }
+
+    function resetEventHandlers(element: HTMLElement) {
+        element.removeEventListener("dragstart", handleDragStart);
+        // element.removeEventListener("dragenter", handleDragEnter);
+        element.removeEventListener("dragover", handleDragOver);
+        element.removeEventListener("dragleave", handleDragLeave);
+        element.removeEventListener("drop", handleDrop);
+        element.removeEventListener("dragend", handleDragEnd);
+    }
 
     function handleDragStart(event: DragEvent) {
         const target = event.target as HTMLElement;
@@ -94,10 +107,12 @@ export function useDraggable(root?: HTMLElement | null): Draggable {
     }
 
     function handleDragEnd() {
-        [].forEach.call(draggableElements, (element: HTMLElement) => {
+        prevId = "";
+        nextId = "";
+        draggableElements.forEach((element: HTMLElement) => {
             element.classList.remove("over");
         });
     }
 
-    return { dragResponse };
+    return { dragResponse, addDraggableElement };
 }

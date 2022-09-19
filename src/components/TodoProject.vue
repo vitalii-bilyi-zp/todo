@@ -12,7 +12,7 @@ import { ActionTypes } from "@/store/actions";
 import type { Project, Task } from "@/interfaces";
 import { isProject, isTask } from "@/interfaces/guards";
 
-import { type Ref, onBeforeMount, ref, computed, provide, watch } from "vue";
+import { type Ref, onBeforeMount, ref, computed, provide, watch, nextTick } from "vue";
 import { type Draggable, useDraggable } from "@/composables/draggable";
 import { exportData, moveInArray, insertToArray } from "@/utils";
 
@@ -42,10 +42,18 @@ function createTask(name: string): void {
         index: groupedTasks.value.length,
     };
     store.dispatch(ActionTypes.CREATE_TASK, task);
+
+    nextTick(() => {
+        addDraggableElement(task.id);
+    });
 }
 
 function createSubtask(task: Task): void {
     store.dispatch(ActionTypes.CREATE_TASK, task);
+
+    nextTick(() => {
+        addDraggableElement(task.id);
+    });
 }
 
 function updateTask(task: Task): void {
@@ -131,7 +139,7 @@ const filteredTasks = computed<Task[]>(() => {
 });
 
 const list = ref<HTMLElement | null>(null);
-const { dragResponse }: Draggable = useDraggable(list.value);
+const { dragResponse, addDraggableElement }: Draggable = useDraggable(list.value);
 type TaskWithNeighbours = { task: Task; neighbours: Task[] };
 watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
     const prevTaskData = findTaskWithNeighboursRecursively(prevId, groupedTasks.value);

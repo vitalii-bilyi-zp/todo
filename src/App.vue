@@ -18,8 +18,8 @@ import TodoProject from "@/components/TodoProject.vue";
 
     .project {
         width: 100%;
-        max-width: 500px;
-        margin: 2rem;
+        max-width: 540px;
+        padding: 20px;
     }
 }
 </style>

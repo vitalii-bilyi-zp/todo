@@ -43,4 +43,35 @@ function deleteTask(id: string): void {
     </ul>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.todo-list,
+:deep(.todo-list) {
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+
+    li {
+        &:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        &:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        &:not(:last-child) {
+            border-bottom: 1px solid #e7eaef;
+        }
+
+        &[draggable="true"] {
+            cursor: move;
+
+            &.over {
+                box-shadow: 0 0 0 0.125em rgb(72 95 199 / 25%);
+            }
+        }
+    }
+}
+</style>

@@ -214,4 +214,66 @@ function createSubtask(name: string): void {
     </div>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.todo-list-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 15px;
+
+    &.is-done {
+        .item-text {
+            .task-name {
+                text-decoration: line-through;
+            }
+        }
+    }
+
+    .item-checkbox {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 2.5em;
+        margin-right: 15px;
+    }
+
+    .item-text {
+        flex-grow: 1;
+        margin-right: 20px;
+
+        &:not(.is-editing) {
+            overflow: hidden;
+        }
+
+        .task-name {
+            min-height: 2.5em;
+            padding-top: calc(0.5em - 1px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        :deep(.search-term) {
+            font-weight: 500;
+        }
+    }
+
+    .dropdown {
+        &:not(:last-child) {
+            margin-right: 5px;
+        }
+    }
+
+    .item-form {
+        width: 100%;
+    }
+}
+
+.todo-list-item-details {
+    display: none;
+    padding: 10px 15px;
+    background-color: #eeeef4;
+
+    &.is-active {
+        display: block;
+    }
+}
+</style>

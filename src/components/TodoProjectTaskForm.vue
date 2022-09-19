@@ -20,7 +20,12 @@ function onSubmit() {
 <template>
     <form class="task-creation-form" @submit.prevent="onSubmit">
         <input v-model="task" class="input" type="text" placeholder="What needs to be done?" />
-        <input type="submit" :disabled="!task" value="Add Task" class="button is-link is-outlined" />
+        <button type="submit" class="button is-link is-outlined" :disabled="!task">
+            <span class="icon button-icon">
+                <i class="mdi mdi-plus"></i>
+            </span>
+            <span class="button-label">Add Task</span>
+        </button>
     </form>
 </template>
 
@@ -31,6 +36,21 @@ function onSubmit() {
 
     .input {
         margin-right: 20px;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .task-creation-form {
+        .button {
+            .button-icon {
+                margin-left: calc(-0.5em - 1px) !important;
+                margin-right: calc(-0.5em - 1px) !important;
+            }
+
+            .button-label {
+                display: none;
+            }
+        }
     }
 }
 </style>

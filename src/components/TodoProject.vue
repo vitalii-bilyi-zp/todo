@@ -328,27 +328,54 @@ function validateProjectStructure(object: any): boolean {
         margin-right: 20px;
     }
 
-    .file-label {
-        border-radius: 4px;
+    .file {
+        & > .file-label {
+            border-radius: 4px;
 
-        .file-cta {
-            border-color: hsl(0deg, 0%, 86%);
-            color: hsl(0deg, 0%, 21%);
-        }
-
-        &:hover {
             .file-cta {
-                background-color: hsl(0deg, 0%, 100%);
-                border-color: hsl(0deg, 0%, 71%);
+                border-color: hsl(0deg, 0%, 86%);
                 color: hsl(0deg, 0%, 21%);
             }
+
+            &:hover {
+                .file-cta {
+                    background-color: hsl(0deg, 0%, 100%);
+                    border-color: hsl(0deg, 0%, 71%);
+                    color: hsl(0deg, 0%, 21%);
+                }
+            }
+
+            &:active {
+                .file-cta {
+                    background-color: hsl(0deg, 0%, 100%);
+                    border-color: hsl(0deg, 0%, 29%);
+                    color: hsl(0deg, 0%, 21%);
+                }
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .project-actions {
+        flex-direction: column;
+
+        .button {
+            width: 100%;
+            margin-right: 0;
+            margin-bottom: 20px;
         }
 
-        &:active {
-            .file-cta {
-                background-color: hsl(0deg, 0%, 100%);
-                border-color: hsl(0deg, 0%, 29%);
-                color: hsl(0deg, 0%, 21%);
+        .file {
+            width: 100%;
+
+            & > .file-label {
+                width: 100%;
+
+                .file-cta {
+                    width: 100%;
+                    justify-content: center;
+                }
             }
         }
     }

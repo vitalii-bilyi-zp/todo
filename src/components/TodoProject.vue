@@ -33,6 +33,9 @@ function initProject(): void {
     };
     store.dispatch(ActionTypes.SET_PROJECT, project);
 }
+function updateProject(project: Project): void {
+    store.dispatch(ActionTypes.SET_PROJECT, project);
+}
 
 function createTask(name: string): void {
     const task: Task = {
@@ -264,7 +267,7 @@ function validateProjectStructure(object: any): boolean {
 <template>
     <div class="todo-project">
         <div class="project-item">
-            <TodoProjectHeader :title="store.state.project.name" />
+            <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
         </div>
         <div class="project-item">
             <TodoProjectSearchForm @search="setSearchTerm" />

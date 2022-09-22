@@ -9,116 +9,218 @@ import { searchTermKey } from "@/keys";
 import { useStore } from "@/store";
 import { ActionTypes } from "@/store/actions";
 
-import type { Project, Task } from "@/interfaces";
-import { isProject, isTask } from "@/interfaces/guards";
+import type {
+    CreateProjectDto,
+    UpdateProjectDto,
+    CreateTaskDto,
+    UpdateTaskDto,
+    Task,
+    TaskWithNeighbours,
+} from "@/interfaces";
 
-import { type Ref, onBeforeMount, ref, computed, provide, watch, nextTick } from "vue";
+import { type Ref, onMounted, ref, computed, provide, watch, nextTick } from "vue";
 import { type Draggable, useDraggable } from "@/composables/draggable";
-import { exportData, moveInArray, insertToArray } from "@/utils";
+import { moveInArray, insertToArray } from "@/utils";
 
 const store = useStore();
 
-onBeforeMount(() => {
+onMounted(() => {
     initProject();
 });
+async function initProject() {
+    if (store.state.projectId) {
+        await getProjectWithTasks(store.state.projectId);
+    } else {
+        await createNewProject();
+    }
 
-function initProject(): void {
-    if (store.state.project) {
+    nextTick(() => {
+        initDraggableElements();
+    });
+}
+async function getProjectWithTasks(id: string) {
+    await store.dispatch(ActionTypes.GET_PROJECT, id);
+    await store.dispatch(ActionTypes.GET_TASKS, id);
+}
+async function createNewProject() {
+    const project: CreateProjectDto = {
+        name: "My Todo List",
+    };
+    await store.dispatch(ActionTypes.CREATE_PROJECT, project);
+}
+function updateProject(project: UpdateProjectDto) {
+    store.dispatch(ActionTypes.UPDATE_PROJECT, project);
+}
+
+const list = ref<HTMLElement | null>(null);
+const { dragResponse, initDraggableElements, addDraggableElement }: Draggable = useDraggable(list.value);
+
+watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
+    const prevTaskData = findTaskWithNeighboursRecursively(prevId, store.state.tasks);
+    const nextTaskData = findTaskWithNeighboursRecursively(nextId, store.state.tasks);
+
+    if (!prevTaskData || !nextTaskData) {
         return;
     }
 
-    const project: Project = {
-        id: Date.now().toString(),
-        name: "My Todo List",
-    };
-    store.dispatch(ActionTypes.SET_PROJECT, project);
-}
-function updateProject(project: Project): void {
-    store.dispatch(ActionTypes.SET_PROJECT, project);
-}
-
-function createTask(name: string): void {
-    const task: Task = {
-        id: Date.now().toString(),
-        name: name,
-        isDone: false,
-        index: groupedTasks.value.length,
-    };
-    store.dispatch(ActionTypes.CREATE_TASK, task);
-
-    nextTick(() => {
-        addDraggableElement(task.id);
-    });
-}
-
-function createSubtask(task: Task): void {
-    store.dispatch(ActionTypes.CREATE_TASK, task);
-
-    nextTick(() => {
-        addDraggableElement(task.id);
-    });
-}
-
-function updateTask(task: Task): void {
-    store.dispatch(ActionTypes.UPDATE_TASK, task);
-}
-
-function deleteTask(id: string): void {
-    const taskData = findTaskWithNeighboursRecursively(id, groupedTasks.value);
-    if (taskData) {
-        const targetList = taskData.neighbours.slice();
-        targetList.splice(taskData.task.index, 1);
-        targetList.forEach((task: Task, index: number) => {
-            store.dispatch(ActionTypes.UPDATE_TASK, {
-                ...task,
-                index,
-                subtasks: [],
-            });
-        });
+    if (prevTaskData.task.parentId === nextTaskData.task.parentId) {
+        updateOneLevelTasks(prevTaskData, nextTaskData);
+    } else {
+        updateDifferentLevelsTasks(prevTaskData, nextTaskData);
+    }
+});
+function findTaskWithNeighboursRecursively(id: string, tasks: Task[]): TaskWithNeighbours | null {
+    for (const task of tasks) {
+        if (task._id === id) {
+            return { task, neighbours: tasks };
+        }
+        const subtasksResponse = findTaskWithNeighboursRecursively(id, task.subtasks || []);
+        if (subtasksResponse) {
+            return subtasksResponse;
+        }
     }
 
-    store.dispatch(ActionTypes.DELETE_TASK, id);
+    return null;
+}
+async function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours) {
+    let targetList = nextTaskData.neighbours.slice();
+    moveInArray(targetList, prevTaskData.task.index, nextTaskData.task.index);
+    targetList = targetList.map((task: Task, index: number) => {
+        return {
+            ...task,
+            index,
+        };
+    });
+
+    await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
+
+    if (!store.state.projectId) {
+        return;
+    }
+
+    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+}
+async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours) {
+    let prevList = prevTaskData.neighbours.slice();
+    let nextList = nextTaskData.neighbours.slice();
+    const prevTask = {
+        ...prevTaskData.task,
+        parentId: nextTaskData.task.parentId,
+    };
+
+    prevList.splice(prevTaskData.task.index, 1);
+    prevList = prevList.map((task: Task, index: number) => {
+        return {
+            ...task,
+            index,
+        };
+    });
+
+    insertToArray(nextList, nextTaskData.task.index + 1, prevTask);
+    nextList = nextList.map((task: Task, index: number) => {
+        return {
+            ...task,
+            index,
+        };
+    });
+
+    await store.dispatch(ActionTypes.UPDATE_TASKS, prevList.concat(nextList));
+
+    if (!store.state.projectId) {
+        return;
+    }
+
+    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
 }
 
 const searchTerm: Ref<string> = ref("");
 provide(searchTermKey, searchTerm);
-function searchTasks(term: string): void {
+function searchTasks(term: string) {
     searchTerm.value = term;
-    if (!store.state.searchHistory.includes(term)) {
-        store.dispatch(ActionTypes.SET_SEARCH_HISTORY, [...store.state.searchHistory, term]);
+    if (
+        !store.state.project ||
+        (store.state.project.searchHistory && store.state.project.searchHistory.includes(term))
+    ) {
+        return;
     }
+    const project: UpdateProjectDto = {
+        ...store.state.project,
+        searchHistory: [...(store.state.project.searchHistory || []), term],
+    };
+    store.dispatch(ActionTypes.UPDATE_PROJECT, project);
 }
 
-const groupedTasks = computed<Task[]>(() => {
-    const parentsGroup = store.state.tasks.reduce((prev: Record<string, Task[]>, curr: Task) => {
-        const parentId = curr.parentId || "root";
-        const group = prev[parentId] || [];
-
-        prev[parentId] = [...group, curr];
-
-        return prev;
-    }, {});
-
-    for (const id in parentsGroup) {
-        parentsGroup[id].sort((a: Task, b: Task) => a.index - b.index);
+async function createTask(name: string) {
+    if (!store.state.projectId) {
+        return;
     }
 
-    const collectSubtasksRecursively = (task: Task): Task => {
-        const subtasks = parentsGroup[task.id] || [];
-
-        return {
-            ...task,
-            subtasks: subtasks.map((task: Task) => collectSubtasksRecursively(task)),
-        };
+    const task: CreateTaskDto = {
+        parentId: store.state.projectId,
+        name: name,
+        index: store.state.tasks.length,
     };
+    const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
 
-    const rootTasks = parentsGroup["root"] || [];
-    return rootTasks.map((task: Task) => collectSubtasksRecursively(task));
-});
+    if (!savedTask) {
+        return;
+    }
+
+    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+
+    nextTick(() => {
+        addDraggableElement(savedTask._id);
+    });
+}
+async function createSubtask(task: CreateTaskDto) {
+    const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
+
+    if (!savedTask || !store.state.projectId) {
+        return;
+    }
+
+    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+
+    nextTick(() => {
+        addDraggableElement(savedTask._id);
+    });
+}
+async function updateTask(task: UpdateTaskDto) {
+    await store.dispatch(ActionTypes.UPDATE_TASKS, [task]);
+
+    if (!store.state.projectId) {
+        return;
+    }
+
+    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+}
+async function deleteTask(id: string) {
+    const taskData = findTaskWithNeighboursRecursively(id, store.state.tasks);
+    if (taskData) {
+        let targetList = taskData.neighbours.slice();
+        targetList.splice(taskData.task.index, 1);
+        targetList = targetList.map((task: Task, index: number) => {
+            return {
+                ...task,
+                index,
+            };
+        });
+
+        await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
+    }
+
+    await store.dispatch(ActionTypes.DELETE_TASK, id);
+
+    if (!store.state.projectId) {
+        return;
+    }
+
+    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+}
 
 const filteredTasks = computed<Task[]>(() => {
     if (!searchTerm.value) {
-        return groupedTasks.value;
+        return store.state.tasks;
     }
 
     const query: string = searchTerm.value as string;
@@ -141,139 +243,69 @@ const filteredTasks = computed<Task[]>(() => {
         }, []);
     };
 
-    return filterTasksRecursively(groupedTasks.value);
+    return filterTasksRecursively(store.state.tasks);
 });
 
-const list = ref<HTMLElement | null>(null);
-const { dragResponse, addDraggableElement }: Draggable = useDraggable(list.value);
-type TaskWithNeighbours = { task: Task; neighbours: Task[] };
-watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
-    const prevTaskData = findTaskWithNeighboursRecursively(prevId, groupedTasks.value);
-    const nextTaskData = findTaskWithNeighboursRecursively(nextId, groupedTasks.value);
+// function exportProject(): void {
+//     const jsonData = JSON.stringify({
+//         project: store.state.project,
+//         tasks: store.state.tasks,
+//     });
+//     exportData(jsonData, `${store.state.project.name}.json`, "application/json");
+// }
 
-    if (!prevTaskData || !nextTaskData) {
-        return;
-    }
-
-    if (prevTaskData.task.parentId === nextTaskData.task.parentId) {
-        updateOneLevelTasks(prevTaskData, nextTaskData);
-    } else {
-        updateDifferentLevelsTasks(prevTaskData, nextTaskData);
-    }
-});
-function findTaskWithNeighboursRecursively(id: string, tasks: Task[]): TaskWithNeighbours | null {
-    for (const task of tasks) {
-        if (task.id === id) {
-            return { task, neighbours: tasks };
-        }
-        const subtasksResponse = findTaskWithNeighboursRecursively(id, task.subtasks || []);
-        if (subtasksResponse) {
-            return subtasksResponse;
-        }
-    }
-
-    return null;
-}
-function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours): void {
-    const targetList = nextTaskData.neighbours.slice();
-    moveInArray(targetList, prevTaskData.task.index, nextTaskData.task.index);
-    targetList.forEach((task: Task, index: number) => {
-        store.dispatch(ActionTypes.UPDATE_TASK, {
-            ...task,
-            index,
-            subtasks: [],
-        });
-    });
-}
-function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours): void {
-    const prevList = prevTaskData.neighbours.slice();
-    const nextList = nextTaskData.neighbours.slice();
-    const prevTask = {
-        ...prevTaskData.task,
-        parentId: nextTaskData.task.parentId,
-    };
-
-    prevList.splice(prevTaskData.task.index, 1);
-    prevList.forEach((task: Task, index: number) => {
-        store.dispatch(ActionTypes.UPDATE_TASK, {
-            ...task,
-            index,
-            subtasks: [],
-        });
-    });
-
-    insertToArray(nextList, nextTaskData.task.index + 1, prevTask);
-    nextList.forEach((task: Task, index: number) => {
-        store.dispatch(ActionTypes.UPDATE_TASK, {
-            ...task,
-            index,
-            subtasks: [],
-        });
-    });
-}
-
-function exportProject(): void {
-    const jsonData = JSON.stringify({
-        project: store.state.project,
-        tasks: store.state.tasks,
-    });
-    exportData(jsonData, `${store.state.project.name}.json`, "application/json");
-}
-
-const fileInput = ref<HTMLInputElement | null>(null);
-function importProject(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const file: File | null = target.files && target.files.length ? target.files[0] : null;
-
-    if (!file) {
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-        try {
-            const object = JSON.parse(reader.result as string);
-            if (validateProjectStructure(object)) {
-                store.dispatch(ActionTypes.SET_PROJECT, object.project);
-                store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
-                if (fileInput.value) {
-                    fileInput.value.value = "";
-                }
-                alert("Project was imported successfully");
-            } else {
-                alert("Invalid file format");
-            }
-        } catch {
-            alert("Invalid file format");
-        }
-    };
-    reader.onerror = () => {
-        alert("Sorry, there was an unexpected error, please try again");
-    };
-    reader.readAsText(file, "UTF-8");
-}
-function validateProjectStructure(object: any): boolean {
-    try {
-        if (!object.project || !isProject(object.project)) {
-            return false;
-        }
-        if (object.tasks) {
-            return object.tasks.every(isTask);
-        }
-        return true;
-    } catch {
-        return false;
-    }
-}
+// const fileInput = ref<HTMLInputElement | null>(null);
+// function importProject(event: Event): void {
+//     const target = event.target as HTMLInputElement;
+//     const file: File | null = target.files && target.files.length ? target.files[0] : null;
+//     if (!file) {
+//         return;
+//     }
+//     const reader = new FileReader();
+//     reader.onloadend = () => {
+//         try {
+//             const object = JSON.parse(reader.result as string);
+//             if (validateProjectStructure(object)) {
+//                 store.dispatch(ActionTypes.SET_PROJECT, object.project);
+//                 store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
+//                 if (fileInput.value) {
+//                     fileInput.value.value = "";
+//                 }
+//                 alert("Project was imported successfully");
+//             } else {
+//                 alert("Invalid file format");
+//             }
+//         } catch {
+//             alert("Invalid file format");
+//         }
+//     };
+//     reader.onerror = () => {
+//         alert("Sorry, there was an unexpected error, please try again");
+//     };
+//     reader.readAsText(file, "UTF-8");
+// }
+// function validateProjectStructure(object: any): boolean {
+//     try {
+//         if (!object.project || !isProject(object.project)) {
+//             return false;
+//         }
+//         if (object.tasks) {
+//             return object.tasks.every(isTask);
+//         }
+//         return true;
+//     } catch {
+//         return false;
+//     }
+// }
 </script>
 
 <template>
-    <div class="todo-project">
+    <div v-if="store.state.project" class="todo-project">
         <div class="project-item">
             <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
         </div>
         <div class="project-item">
-            <TodoProjectSearchForm :search-history="store.state.searchHistory" @search="searchTasks" />
+            <TodoProjectSearchForm :search-history="store.state.project.searchHistory" @search="searchTasks" />
         </div>
         <div class="project-item">
             <TodoProjectTaskForm @submit="createTask" />
@@ -286,7 +318,7 @@ function validateProjectStructure(object: any): boolean {
                 @delete-task="deleteTask"
             />
         </div>
-        <div class="project-item">
+        <!-- <div class="project-item">
             <div class="project-actions">
                 <button class="button" @click="exportProject">
                     <span class="icon">
@@ -314,7 +346,7 @@ function validateProjectStructure(object: any): boolean {
                     </label>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 </template>
 

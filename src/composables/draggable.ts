@@ -1,10 +1,11 @@
-import { type Ref, ref, onMounted, onUnmounted } from "vue";
+import { type Ref, ref, onUnmounted } from "vue";
 
 export interface Draggable {
     dragResponse: Ref<{
         prevId: string;
         nextId: string;
     }>;
+    initDraggableElements: () => void;
     addDraggableElement: (id: string) => void;
 }
 
@@ -18,14 +19,14 @@ export function useDraggable(root?: HTMLElement | null): Draggable {
     const parent = root || document;
     let draggableElements: HTMLElement[] = [];
 
-    onMounted(() => {
-        draggableElements = Array.prototype.slice.call(parent.querySelectorAll<HTMLElement>('[draggable="true"]'));
-        draggableElements.forEach(setupEventHandlers);
-    });
-
     onUnmounted(() => {
         draggableElements.forEach(resetEventHandlers);
     });
+
+    function initDraggableElements() {
+        draggableElements = Array.prototype.slice.call(parent.querySelectorAll<HTMLElement>('[draggable="true"]'));
+        draggableElements.forEach(setupEventHandlers);
+    }
 
     function addDraggableElement(id: string) {
         const element: HTMLElement | null = parent.querySelector(`[data-id="${id}"]`);
@@ -114,5 +115,5 @@ export function useDraggable(root?: HTMLElement | null): Draggable {
         });
     }
 
-    return { dragResponse, addDraggableElement };
+    return { dragResponse, initDraggableElements, addDraggableElement };
 }

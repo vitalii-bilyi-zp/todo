@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import EditableText from "@/components/EditableText.vue";
 
-import type { Project } from "@/interfaces";
+import type { UpdateProjectDto, Project } from "@/interfaces";
 import { type Ref, ref } from "vue";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 const props = defineProps<Props>();
 
 interface Emits {
-    (e: "updateProject", project: Project): void;
+    (e: "updateProject", project: UpdateProjectDto): void;
 }
 const emit = defineEmits<Emits>();
 

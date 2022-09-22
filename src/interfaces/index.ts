@@ -1,13 +1,43 @@
-export interface Project {
-    id: string;
+export interface CreateProjectDto {
     name: string;
 }
 
-export interface Task {
-    id: string;
-    parentId?: string;
+export interface UpdateProjectDto {
+    _id: string;
+    name?: string;
+    searchHistory?: string[];
+}
+
+export interface Project {
+    _id: string;
     name: string;
+    searchHistory?: string[];
+}
+
+export interface CreateTaskDto {
+    parentId: string;
+    name: string;
+    index: number;
+}
+
+export interface UpdateTaskDto {
+    _id: string;
+    parentId?: string;
+    name?: string;
+    index?: number;
+    isDone?: boolean;
+}
+
+export interface Task {
+    _id: string;
+    parentId: string;
+    name: string;
+    index: number;
     isDone?: boolean;
     subtasks?: Task[];
-    index: number;
+}
+
+export interface TaskWithNeighbours {
+    task: Task;
+    neighbours: Task[];
 }

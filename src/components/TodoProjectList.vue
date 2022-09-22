@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import TodoProjectListItem from "@/components/TodoProjectListItem.vue";
 
-import type { Task } from "@/interfaces";
+import type { CreateTaskDto, UpdateTaskDto, Task } from "@/interfaces";
 
 interface Props {
     tasks: Task[];
@@ -11,17 +11,17 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 interface Emits {
-    (e: "createSubtask", task: Task): void;
-    (e: "updateTask", task: Task): void;
+    (e: "createSubtask", task: CreateTaskDto): void;
+    (e: "updateTask", task: UpdateTaskDto): void;
     (e: "deleteTask", id: string): void;
 }
 const emit = defineEmits<Emits>();
 
-function createSubtask(task: Task): void {
+function createSubtask(task: CreateTaskDto): void {
     emit("createSubtask", task);
 }
 
-function updateTask(task: Task): void {
+function updateTask(task: UpdateTaskDto): void {
     emit("updateTask", task);
 }
 
@@ -32,7 +32,7 @@ function deleteTask(id: string): void {
 
 <template>
     <ul class="todo-list">
-        <li v-for="task in props.tasks" :key="task.id" :data-id="task.id" draggable="true">
+        <li v-for="task in props.tasks" :key="task._id" :data-id="task._id" draggable="true">
             <TodoProjectListItem
                 :task="task"
                 @create-subtask="createSubtask"

@@ -2,7 +2,7 @@
 import EditableText from "@/components/EditableText.vue";
 import TodoProjectListItemSubtaskForm from "@/components/TodoProjectListItemSubtaskForm.vue";
 
-import type { Task } from "@/interfaces";
+import type { CreateTaskDto, UpdateTaskDto, Task } from "@/interfaces";
 import { type Ref, inject, computed, ref } from "vue";
 import { searchTermKey } from "@/keys";
 
@@ -12,8 +12,8 @@ interface Props {
 const props = defineProps<Props>();
 
 interface Emits {
-    (e: "createSubtask", task: Task): void;
-    (e: "updateTask", task: Task): void;
+    (e: "createSubtask", task: CreateTaskDto): void;
+    (e: "updateTask", task: UpdateTaskDto): void;
     (e: "deleteTask", id: string): void;
 }
 const emit = defineEmits<Emits>();
@@ -83,7 +83,7 @@ function stopEditing(): void {
 }
 
 function deleteTask(): void {
-    emit("deleteTask", props.task.id);
+    emit("deleteTask", props.task._id);
 }
 
 const detailsState: Ref<boolean> = ref(false);
@@ -104,11 +104,9 @@ function closeSubtaskForm(): void {
 }
 
 function createSubtask(name: string): void {
-    const task: Task = {
-        id: Date.now().toString(),
-        parentId: props.task.id,
+    const task: CreateTaskDto = {
+        parentId: props.task._id,
         name: name,
-        isDone: false,
         index: props.task.subtasks?.length || 0,
     };
     emit("createSubtask", task);
@@ -201,7 +199,7 @@ function createSubtask(name: string): void {
                         />
                     </div>
                 </li>
-                <li v-for="task in props.task.subtasks" :key="task.id" :data-id="task.id" draggable="true">
+                <li v-for="task in props.task.subtasks" :key="task._id" :data-id="task._id" draggable="true">
                     <TodoProjectListItem
                         :task="task"
                         @create-subtask="emit('createSubtask', $event)"

@@ -19,10 +19,13 @@ import type {
 } from "@/interfaces";
 
 import { type Ref, onMounted, ref, computed, provide, watch, nextTick } from "vue";
-import { type Draggable, useDraggable } from "@/composables/draggable";
+import { type SortableList, type SortResponse, useSortableList } from "@/composables/sortable-list";
 import { moveInArray, insertToArray } from "@/utils";
 
 const store = useStore();
+
+const { sortResponse, initSortableList }: SortableList = useSortableList();
+const list = ref<HTMLElement | null>(null);
 
 onMounted(() => {
     initProject();
@@ -42,7 +45,7 @@ async function initProject() {
     }
 
     nextTick(() => {
-        initDraggableElements();
+        initSortableList(list.value);
     });
 }
 function updateProject(project: UpdateProjectDto) {
@@ -53,39 +56,27 @@ function updateProject(project: UpdateProjectDto) {
     }
 }
 
-const list = ref<HTMLElement | null>(null);
-const { dragResponse, initDraggableElements, addDraggableElement }: Draggable = useDraggable(list.value);
-
-watch(dragResponse, ({ prevId, nextId }: { prevId: string; nextId: string }) => {
-    const prevTaskData = findTaskWithNeighboursRecursively(prevId, store.state.tasks);
-    const nextTaskData = findTaskWithNeighboursRecursively(nextId, store.state.tasks);
-
-    if (!prevTaskData || !nextTaskData) {
-        return;
-    }
-
-    if (prevTaskData.task.parentId === nextTaskData.task.parentId) {
-        updateOneLevelTasks(prevTaskData, nextTaskData);
+watch(sortResponse, (newValue: SortResponse) => {
+    if (newValue.oldParentId === newValue.newParentId) {
+        updateOneLevelTasks(newValue);
     } else {
-        updateDifferentLevelsTasks(prevTaskData, nextTaskData);
+        updateDifferentLevelsTasks(newValue);
     }
 });
-function findTaskWithNeighboursRecursively(id: string, tasks: Task[]): TaskWithNeighbours | null {
-    for (const task of tasks) {
-        if (task._id === id) {
-            return { task, neighbours: tasks };
-        }
-        const subtasksResponse = findTaskWithNeighboursRecursively(id, task.subtasks || []);
-        if (subtasksResponse) {
-            return subtasksResponse;
-        }
+async function updateOneLevelTasks(sortResponse: SortResponse) {
+    let targetList = findTasksByParentId(sortResponse.newParentId, store.state.tasks);
+    if (!targetList.length) {
+        return;
     }
+    targetList = targetList.map((task: Task) => ({
+        _id: task._id,
+        parentId: task.parentId,
+        name: task.name,
+        index: task.index,
+        isDone: task.isDone,
+    }));
 
-    return null;
-}
-async function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours) {
-    let targetList = nextTaskData.neighbours.slice();
-    moveInArray(targetList, prevTaskData.task.index, nextTaskData.task.index);
+    moveInArray(targetList, sortResponse.oldIndex, sortResponse.newIndex);
     targetList = targetList.map((task: Task, index: number) => {
         return {
             ...task,
@@ -95,29 +86,50 @@ async function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskDat
 
     try {
         await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
-        reloadProject();
+        await reloadProject();
+        nextTick(() => {
+            removeDuplicate(sortResponse.itemId);
+        });
     } catch {
         //
     }
 }
-async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours) {
-    let prevList = prevTaskData.neighbours.slice();
-    let nextList = nextTaskData.neighbours.slice();
-    const prevTask = {
-        ...prevTaskData.task,
-        parentId: nextTaskData.task.parentId,
-    };
+async function updateDifferentLevelsTasks(sortResponse: SortResponse) {
+    let oldList = findTasksByParentId(sortResponse.oldParentId, store.state.tasks);
+    if (!oldList.length) {
+        return;
+    }
+    oldList = oldList.map((task: Task) => ({
+        _id: task._id,
+        parentId: task.parentId,
+        name: task.name,
+        index: task.index,
+        isDone: task.isDone,
+    }));
 
-    prevList.splice(prevTaskData.task.index, 1);
-    prevList = prevList.map((task: Task, index: number) => {
+    let newList = findTasksByParentId(sortResponse.newParentId, store.state.tasks);
+    if (!newList.length) {
+        return;
+    }
+    newList = newList.map((task: Task) => ({
+        _id: task._id,
+        parentId: task.parentId,
+        name: task.name,
+        index: task.index,
+        isDone: task.isDone,
+    }));
+
+    const oldItem = oldList.splice(sortResponse.oldIndex, 1)[0];
+    oldList = oldList.map((task: Task, index: number) => {
         return {
             ...task,
             index,
         };
     });
 
-    insertToArray(nextList, nextTaskData.task.index + 1, prevTask);
-    nextList = nextList.map((task: Task, index: number) => {
+    oldItem.parentId = sortResponse.newParentId;
+    insertToArray(newList, sortResponse.newIndex, oldItem);
+    newList = newList.map((task: Task, index: number) => {
         return {
             ...task,
             index,
@@ -125,11 +137,36 @@ async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, next
     });
 
     try {
-        await store.dispatch(ActionTypes.UPDATE_TASKS, prevList.concat(nextList));
-        reloadProject();
+        await store.dispatch(ActionTypes.UPDATE_TASKS, oldList.concat(newList));
+        await reloadProject();
+        nextTick(() => {
+            removeDuplicate(sortResponse.itemId);
+        });
     } catch {
         //
     }
+}
+function findTasksByParentId(parentId: string, tasks: Task[]): Task[] {
+    if (!tasks.length) {
+        return [];
+    }
+    if (tasks[0].parentId === parentId) {
+        return tasks;
+    }
+
+    const taskData = findTaskWithNeighboursRecursively(parentId, tasks);
+    if (!taskData) {
+        return [];
+    }
+
+    return taskData.task.subtasks || [];
+}
+function removeDuplicate(id: string) {
+    const duplicate = list.value?.querySelector(`[data-id="${id}"] + [data-id="${id}"]`);
+    if (!duplicate) {
+        return;
+    }
+    duplicate.remove();
 }
 
 const searchTerm: Ref<string> = ref("");
@@ -163,8 +200,12 @@ async function createTask(name: string) {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
         reloadProject();
 
+        if (savedTask.index > 0) {
+            return;
+        }
+
         nextTick(() => {
-            addDraggableElement(savedTask._id);
+            initSortableList(list.value);
         });
     } catch {
         //
@@ -175,8 +216,12 @@ async function createSubtask(task: CreateTaskDto) {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
         reloadProject();
 
+        if (savedTask.index > 0) {
+            return;
+        }
+
         nextTick(() => {
-            addDraggableElement(savedTask._id);
+            initSortableList(list.value);
         });
     } catch {
         //
@@ -212,7 +257,20 @@ async function deleteTask(id: string) {
         //
     }
 }
+function findTaskWithNeighboursRecursively(id: string, tasks: Task[]): TaskWithNeighbours | null {
+    for (const task of tasks) {
+        if (task._id === id) {
+            return { task, neighbours: tasks };
+        }
 
+        const subtasksResponse = findTaskWithNeighboursRecursively(id, task.subtasks || []);
+        if (subtasksResponse) {
+            return subtasksResponse;
+        }
+    }
+
+    return null;
+}
 async function reloadProject() {
     if (!store.state.projectId) {
         return;
@@ -302,6 +360,7 @@ async function importProject(event: Event) {
         </div>
         <div v-if="filteredTasks.length" ref="list" class="project-item">
             <TodoProjectList
+                :project-id="store.state.projectId"
                 :tasks="filteredTasks"
                 @create-subtask="createSubtask"
                 @update-task="updateTask"

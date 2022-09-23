@@ -4,6 +4,7 @@ import TodoProjectListItem from "@/components/TodoProjectListItem.vue";
 import type { CreateTaskDto, UpdateTaskDto, Task } from "@/interfaces";
 
 interface Props {
+    projectId: string | null;
     tasks: Task[];
 }
 const props = withDefaults(defineProps<Props>(), {
@@ -31,8 +32,8 @@ function deleteTask(id: string): void {
 </script>
 
 <template>
-    <ul class="todo-list">
-        <li v-for="task in props.tasks" :key="task._id" :data-id="task._id" draggable="true">
+    <ul class="todo-list" :data-parent-id="projectId">
+        <li v-for="task in props.tasks" :key="task._id" :data-id="task._id" class="is-draggable">
             <TodoProjectListItem
                 :task="task"
                 @create-subtask="createSubtask"
@@ -65,12 +66,8 @@ function deleteTask(id: string): void {
             border-bottom: 1px solid #e7eaef;
         }
 
-        &[draggable="true"] {
+        &.is-draggable {
             cursor: move;
-
-            &.over {
-                box-shadow: 0 0 0 0.125em rgb(72 95 199 / 25%);
-            }
         }
     }
 }

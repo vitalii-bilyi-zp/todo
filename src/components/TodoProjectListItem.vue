@@ -189,7 +189,7 @@ function createSubtask(name: string): void {
         </div>
 
         <div v-if="showDetails" class="todo-list-item-details" :class="{ 'is-active': detailsState }">
-            <ul class="todo-list">
+            <ul class="todo-list" :data-parent-id="props.task._id">
                 <li v-if="subtaskFormState">
                     <div class="todo-list-item">
                         <TodoProjectListItemSubtaskForm
@@ -199,7 +199,7 @@ function createSubtask(name: string): void {
                         />
                     </div>
                 </li>
-                <li v-for="task in props.task.subtasks" :key="task._id" :data-id="task._id" draggable="true">
+                <li v-for="task in props.task.subtasks" :key="task._id" :data-id="task._id" class="is-draggable">
                     <TodoProjectListItem
                         :task="task"
                         @create-subtask="emit('createSubtask', $event)"

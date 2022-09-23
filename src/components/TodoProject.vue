@@ -241,44 +241,60 @@ const filteredTasks = computed<Task[]>(() => {
     return filterTasksRecursively(store.state.tasks);
 });
 
-// function exportProject(): void {
-//     const jsonData = JSON.stringify({
-//         project: store.state.project,
-//         tasks: store.state.tasks,
-//     });
-//     exportData(jsonData, `${store.state.project.name}.json`, "application/json");
-// }
+async function exportProject() {
+    if (!store.state.projectId) {
+        return;
+    }
 
-// const fileInput = ref<HTMLInputElement | null>(null);
-// function importProject(event: Event): void {
-//     const target = event.target as HTMLInputElement;
-//     const file: File | null = target.files && target.files.length ? target.files[0] : null;
-//     if (!file) {
-//         return;
-//     }
-//     const reader = new FileReader();
-//     reader.onloadend = () => {
-//         try {
-//             const object = JSON.parse(reader.result as string);
-//             if (validateProjectStructure(object)) {
-//                 store.dispatch(ActionTypes.SET_PROJECT, object.project);
-//                 store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
-//                 if (fileInput.value) {
-//                     fileInput.value.value = "";
-//                 }
-//                 alert("Project was imported successfully");
-//             } else {
-//                 alert("Invalid file format");
-//             }
-//         } catch {
-//             alert("Invalid file format");
-//         }
-//     };
-//     reader.onerror = () => {
-//         alert("Sorry, there was an unexpected error, please try again");
-//     };
-//     reader.readAsText(file, "UTF-8");
-// }
+    const res = await store.dispatch(ActionTypes.EXPORT_PROJECT, store.state.projectId);
+    if (!res) {
+        return;
+    }
+
+    const contentDispositionHeader = res.headers.get("Content-Disposition");
+    const fileName = contentDispositionHeader
+        ? contentDispositionHeader.replace(/^.+filename="(.+)"$/, "$1")
+        : "todo-list";
+    const fileBlob = await res.blob();
+    const fileURL = URL.createObjectURL(fileBlob);
+    const anchor = document.createElement("a");
+    anchor.href = fileURL;
+    anchor.download = `${fileName}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+}
+
+const fileInput = ref<HTMLInputElement | null>(null);
+function importProject(event: Event) {
+    // const target = event.target as HTMLInputElement;
+    // const file: File | null = target.files && target.files.length ? target.files[0] : null;
+    // if (!file) {
+    //     return;
+    // }
+    // const reader = new FileReader();
+    // reader.onloadend = () => {
+    //     try {
+    //         const object = JSON.parse(reader.result as string);
+    //         if (validateProjectStructure(object)) {
+    //             store.dispatch(ActionTypes.SET_PROJECT, object.project);
+    //             store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
+    //             if (fileInput.value) {
+    //                 fileInput.value.value = "";
+    //             }
+    //             alert("Project was imported successfully");
+    //         } else {
+    //             alert("Invalid file format");
+    //         }
+    //     } catch {
+    //         alert("Invalid file format");
+    //     }
+    // };
+    // reader.onerror = () => {
+    //     alert("Sorry, there was an unexpected error, please try again");
+    // };
+    // reader.readAsText(file, "UTF-8");
+}
 // function validateProjectStructure(object: any): boolean {
 //     try {
 //         if (!object.project || !isProject(object.project)) {
@@ -313,7 +329,7 @@ const filteredTasks = computed<Task[]>(() => {
                 @delete-task="deleteTask"
             />
         </div>
-        <!-- <div class="project-item">
+        <div class="project-item">
             <div class="project-actions">
                 <button class="button" @click="exportProject">
                     <span class="icon">
@@ -341,7 +357,7 @@ const filteredTasks = computed<Task[]>(() => {
                     </label>
                 </div>
             </div>
-        </div> -->
+        </div>
     </div>
 </template>
 

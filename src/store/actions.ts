@@ -10,6 +10,7 @@ export enum ActionTypes {
     CREATE_PROJECT = "CREATE_PROJECT",
     UPDATE_PROJECT = "UPDATE_PROJECT",
     DELETE_PROJECT = "DELETE_PROJECT",
+    EXPORT_PROJECT = "EXPORT_PROJECT",
     GET_TASKS = "GET_TASKS",
     CREATE_TASK = "CREATE_TASK",
     UPDATE_TASKS = "UPDATE_TASKS",
@@ -39,6 +40,8 @@ export interface Actions {
     ): Promise<Project | null>;
 
     [ActionTypes.DELETE_PROJECT]({ commit }: AugmentedActionContext, id: string): Promise<Project | null>;
+
+    [ActionTypes.EXPORT_PROJECT]({ commit }: AugmentedActionContext, id: string): Promise<Response | null>;
 
     [ActionTypes.GET_TASKS]({ commit }: AugmentedActionContext, id: string): Promise<Task[] | null>;
 
@@ -139,6 +142,25 @@ export const actions: ActionTree<State, State> & Actions = {
             commit(MutationTypes.SET_PROJECT, null);
 
             return project;
+        } catch {
+            return null;
+        }
+    },
+
+    async [ActionTypes.EXPORT_PROJECT](ctx, id: string) {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/projects/${id}/export`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error(res.statusText);
+            }
+
+            return res;
         } catch {
             return null;
         }

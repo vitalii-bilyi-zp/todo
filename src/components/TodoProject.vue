@@ -39,17 +39,29 @@ async function initProject() {
     });
 }
 async function getProjectWithTasks(id: string) {
-    await store.dispatch(ActionTypes.GET_PROJECT, id);
-    await store.dispatch(ActionTypes.GET_TASKS, id);
+    try {
+        await store.dispatch(ActionTypes.GET_PROJECT, id);
+        await store.dispatch(ActionTypes.GET_TASKS, id);
+    } catch {
+        //
+    }
 }
 async function createNewProject() {
-    const project: CreateProjectDto = {
-        name: "My Todo List",
-    };
-    await store.dispatch(ActionTypes.CREATE_PROJECT, project);
+    try {
+        const project: CreateProjectDto = {
+            name: "My Todo List",
+        };
+        await store.dispatch(ActionTypes.CREATE_PROJECT, project);
+    } catch {
+        //
+    }
 }
 function updateProject(project: UpdateProjectDto) {
-    store.dispatch(ActionTypes.UPDATE_PROJECT, project);
+    try {
+        store.dispatch(ActionTypes.UPDATE_PROJECT, project);
+    } catch {
+        //
+    }
 }
 
 const list = ref<HTMLElement | null>(null);
@@ -92,13 +104,12 @@ async function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskDat
         };
     });
 
-    await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
-
-    if (!store.state.projectId) {
-        return;
+    try {
+        await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
+        reloadTasks();
+    } catch {
+        //
     }
-
-    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
 }
 async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, nextTaskData: TaskWithNeighbours) {
     let prevList = prevTaskData.neighbours.slice();
@@ -124,13 +135,12 @@ async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, next
         };
     });
 
-    await store.dispatch(ActionTypes.UPDATE_TASKS, prevList.concat(nextList));
-
-    if (!store.state.projectId) {
-        return;
+    try {
+        await store.dispatch(ActionTypes.UPDATE_TASKS, prevList.concat(nextList));
+        reloadTasks();
+    } catch {
+        //
     }
-
-    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
 }
 
 const searchTerm: Ref<string> = ref("");
@@ -142,7 +152,11 @@ function searchTasks(term: string) {
         return;
     }
 
-    store.dispatch(ActionTypes.SET_SEARCH_HISTORY, [...store.state.searchHistory, term]);
+    try {
+        store.dispatch(ActionTypes.SET_SEARCH_HISTORY, [...store.state.searchHistory, term]);
+    } catch {
+        //
+    }
 }
 
 async function createTask(name: string) {
@@ -155,44 +169,43 @@ async function createTask(name: string) {
         name: name,
         index: store.state.tasks.length,
     };
-    const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
 
-    if (!savedTask) {
-        return;
+    try {
+        const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
+        reloadTasks();
+
+        nextTick(() => {
+            addDraggableElement(savedTask._id);
+        });
+    } catch {
+        //
     }
-
-    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
-
-    nextTick(() => {
-        addDraggableElement(savedTask._id);
-    });
 }
 async function createSubtask(task: CreateTaskDto) {
-    const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
+    try {
+        const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
+        reloadTasks();
 
-    if (!savedTask || !store.state.projectId) {
-        return;
+        nextTick(() => {
+            addDraggableElement(savedTask._id);
+        });
+    } catch {
+        //
     }
-
-    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
-
-    nextTick(() => {
-        addDraggableElement(savedTask._id);
-    });
 }
 async function updateTask(task: UpdateTaskDto) {
-    await store.dispatch(ActionTypes.UPDATE_TASKS, [task]);
-
-    if (!store.state.projectId) {
-        return;
+    try {
+        await store.dispatch(ActionTypes.UPDATE_TASKS, [task]);
+        reloadTasks();
+    } catch {
+        //
     }
-
-    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
 }
 async function deleteTask(id: string) {
+    let targetList: Task[] = [];
     const taskData = findTaskWithNeighboursRecursively(id, store.state.tasks);
     if (taskData) {
-        let targetList = taskData.neighbours.slice();
+        targetList = taskData.neighbours.slice();
         targetList.splice(taskData.task.index, 1);
         targetList = targetList.map((task: Task, index: number) => {
             return {
@@ -200,17 +213,22 @@ async function deleteTask(id: string) {
                 index,
             };
         });
-
-        await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
     }
 
-    await store.dispatch(ActionTypes.DELETE_TASK, id);
+    try {
+        await store.dispatch(ActionTypes.DELETE_TASK, id);
+        await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
+        reloadTasks();
+    } catch {
+        //
+    }
+}
 
+async function reloadTasks() {
     if (!store.state.projectId) {
         return;
     }
-
-    store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
 }
 
 const filteredTasks = computed<Task[]>(() => {
@@ -246,32 +264,33 @@ async function exportProject() {
         return;
     }
 
-    const res = await store.dispatch(ActionTypes.EXPORT_PROJECT, store.state.projectId);
-    if (!res) {
-        return;
+    try {
+        const res = await store.dispatch(ActionTypes.EXPORT_PROJECT, store.state.projectId);
+        const contentDispositionHeader = res.headers.get("Content-Disposition");
+        const fileName = contentDispositionHeader
+            ? contentDispositionHeader.replace(/^.+filename="(.+)"$/, "$1")
+            : "todo-list";
+        const fileBlob = await res.blob();
+        const fileURL = URL.createObjectURL(fileBlob);
+        const anchor = document.createElement("a");
+        anchor.href = fileURL;
+        anchor.download = `${fileName}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+    } catch {
+        //
     }
-
-    const contentDispositionHeader = res.headers.get("Content-Disposition");
-    const fileName = contentDispositionHeader
-        ? contentDispositionHeader.replace(/^.+filename="(.+)"$/, "$1")
-        : "todo-list";
-    const fileBlob = await res.blob();
-    const fileURL = URL.createObjectURL(fileBlob);
-    const anchor = document.createElement("a");
-    anchor.href = fileURL;
-    anchor.download = `${fileName}.json`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
 }
 
 const fileInput = ref<HTMLInputElement | null>(null);
 function importProject(event: Event) {
-    // const target = event.target as HTMLInputElement;
-    // const file: File | null = target.files && target.files.length ? target.files[0] : null;
-    // if (!file) {
-    //     return;
-    // }
+    const target = event.target as HTMLInputElement;
+    const file: File | null = target.files && target.files.length ? target.files[0] : null;
+    if (!file) {
+        return;
+    }
+
     // const reader = new FileReader();
     // reader.onloadend = () => {
     //     try {

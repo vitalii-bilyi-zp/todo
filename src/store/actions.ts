@@ -11,6 +11,7 @@ export enum ActionTypes {
     UPDATE_PROJECT = "UPDATE_PROJECT",
     DELETE_PROJECT = "DELETE_PROJECT",
     EXPORT_PROJECT = "EXPORT_PROJECT",
+    IMPORT_PROJECT = "IMPORT_PROJECT",
     GET_TASKS = "GET_TASKS",
     CREATE_TASK = "CREATE_TASK",
     UPDATE_TASKS = "UPDATE_TASKS",
@@ -37,7 +38,10 @@ export interface Actions {
 
     [ActionTypes.EXPORT_PROJECT]({ commit }: AugmentedActionContext, id: string): Promise<Response>;
 
-    [ActionTypes.GET_TASKS]({ commit }: AugmentedActionContext, id: string): Promise<Task[]>;
+    [ActionTypes.IMPORT_PROJECT](
+        { commit }: AugmentedActionContext,
+        payload: { id: string; file: File }
+    ): Promise<Project>;
 
     [ActionTypes.CREATE_TASK]({ commit }: AugmentedActionContext, payload: CreateTaskDto): Promise<Task>;
 
@@ -83,6 +87,7 @@ export const actions: ActionTree<State, State> & Actions = {
 
         const project: Project = await res.json();
         commit(MutationTypes.SET_PROJECT, project);
+        commit(MutationTypes.SET_TASKS, project.tasks || []);
 
         return project;
     },
@@ -121,6 +126,7 @@ export const actions: ActionTree<State, State> & Actions = {
         const project: Project = await res.json();
         commit(MutationTypes.SET_PROJECT_ID, null);
         commit(MutationTypes.SET_PROJECT, null);
+        commit(MutationTypes.SET_TASKS, []);
 
         return project;
     },
@@ -140,22 +146,24 @@ export const actions: ActionTree<State, State> & Actions = {
         return res;
     },
 
-    async [ActionTypes.GET_TASKS]({ commit }, id: string) {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/projects/${id}/tasks`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
+    async [ActionTypes.IMPORT_PROJECT]({ commit }, { id, file }: { id: string; file: File }) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/projects/${id}/import`, {
+            method: "POST",
+            body: formData,
         });
 
         if (!res.ok) {
             throw new Error(res.statusText);
         }
 
-        const tasks: Task[] = await res.json();
-        commit(MutationTypes.SET_TASKS, tasks);
+        const project: Project = await res.json();
+        commit(MutationTypes.SET_PROJECT, project);
+        commit(MutationTypes.SET_TASKS, project.tasks || []);
 
-        return tasks;
+        return project;
     },
 
     async [ActionTypes.CREATE_TASK](ctx, payload: CreateTaskDto) {

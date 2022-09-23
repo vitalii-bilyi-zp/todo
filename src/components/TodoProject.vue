@@ -28,33 +28,22 @@ onMounted(() => {
     initProject();
 });
 async function initProject() {
-    if (store.state.projectId) {
-        await getProjectWithTasks(store.state.projectId);
-    } else {
-        await createNewProject();
+    try {
+        if (store.state.projectId) {
+            await store.dispatch(ActionTypes.GET_PROJECT, store.state.projectId);
+        } else {
+            const project: CreateProjectDto = {
+                name: "My Todo List",
+            };
+            await store.dispatch(ActionTypes.CREATE_PROJECT, project);
+        }
+    } catch {
+        //
     }
 
     nextTick(() => {
         initDraggableElements();
     });
-}
-async function getProjectWithTasks(id: string) {
-    try {
-        await store.dispatch(ActionTypes.GET_PROJECT, id);
-        await store.dispatch(ActionTypes.GET_TASKS, id);
-    } catch {
-        //
-    }
-}
-async function createNewProject() {
-    try {
-        const project: CreateProjectDto = {
-            name: "My Todo List",
-        };
-        await store.dispatch(ActionTypes.CREATE_PROJECT, project);
-    } catch {
-        //
-    }
 }
 function updateProject(project: UpdateProjectDto) {
     try {
@@ -106,7 +95,7 @@ async function updateOneLevelTasks(prevTaskData: TaskWithNeighbours, nextTaskDat
 
     try {
         await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
-        reloadTasks();
+        reloadProject();
     } catch {
         //
     }
@@ -137,7 +126,7 @@ async function updateDifferentLevelsTasks(prevTaskData: TaskWithNeighbours, next
 
     try {
         await store.dispatch(ActionTypes.UPDATE_TASKS, prevList.concat(nextList));
-        reloadTasks();
+        reloadProject();
     } catch {
         //
     }
@@ -172,7 +161,7 @@ async function createTask(name: string) {
 
     try {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
-        reloadTasks();
+        reloadProject();
 
         nextTick(() => {
             addDraggableElement(savedTask._id);
@@ -184,7 +173,7 @@ async function createTask(name: string) {
 async function createSubtask(task: CreateTaskDto) {
     try {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
-        reloadTasks();
+        reloadProject();
 
         nextTick(() => {
             addDraggableElement(savedTask._id);
@@ -196,7 +185,7 @@ async function createSubtask(task: CreateTaskDto) {
 async function updateTask(task: UpdateTaskDto) {
     try {
         await store.dispatch(ActionTypes.UPDATE_TASKS, [task]);
-        reloadTasks();
+        reloadProject();
     } catch {
         //
     }
@@ -218,17 +207,17 @@ async function deleteTask(id: string) {
     try {
         await store.dispatch(ActionTypes.DELETE_TASK, id);
         await store.dispatch(ActionTypes.UPDATE_TASKS, targetList);
-        reloadTasks();
+        reloadProject();
     } catch {
         //
     }
 }
 
-async function reloadTasks() {
+async function reloadProject() {
     if (!store.state.projectId) {
         return;
     }
-    await store.dispatch(ActionTypes.GET_TASKS, store.state.projectId);
+    await store.dispatch(ActionTypes.GET_PROJECT, store.state.projectId);
 }
 
 const filteredTasks = computed<Task[]>(() => {
@@ -284,49 +273,20 @@ async function exportProject() {
 }
 
 const fileInput = ref<HTMLInputElement | null>(null);
-function importProject(event: Event) {
+async function importProject(event: Event) {
     const target = event.target as HTMLInputElement;
     const file: File | null = target.files && target.files.length ? target.files[0] : null;
-    if (!file) {
+    if (!file || !store.state.projectId) {
         return;
     }
 
-    // const reader = new FileReader();
-    // reader.onloadend = () => {
-    //     try {
-    //         const object = JSON.parse(reader.result as string);
-    //         if (validateProjectStructure(object)) {
-    //             store.dispatch(ActionTypes.SET_PROJECT, object.project);
-    //             store.dispatch(ActionTypes.SET_TASKS, object.tasks || []);
-    //             if (fileInput.value) {
-    //                 fileInput.value.value = "";
-    //             }
-    //             alert("Project was imported successfully");
-    //         } else {
-    //             alert("Invalid file format");
-    //         }
-    //     } catch {
-    //         alert("Invalid file format");
-    //     }
-    // };
-    // reader.onerror = () => {
-    //     alert("Sorry, there was an unexpected error, please try again");
-    // };
-    // reader.readAsText(file, "UTF-8");
+    try {
+        await store.dispatch(ActionTypes.IMPORT_PROJECT, { id: store.state.projectId, file });
+        alert("Project was imported successfully");
+    } catch {
+        alert("Project import failed");
+    }
 }
-// function validateProjectStructure(object: any): boolean {
-//     try {
-//         if (!object.project || !isProject(object.project)) {
-//             return false;
-//         }
-//         if (object.tasks) {
-//             return object.tasks.every(isTask);
-//         }
-//         return true;
-//     } catch {
-//         return false;
-//     }
-// }
 </script>
 
 <template>

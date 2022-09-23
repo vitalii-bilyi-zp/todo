@@ -10,6 +10,7 @@ export interface UpdateProjectDto {
 export interface Project {
     _id: string;
     name: string;
+    tasks?: Task[];
 }
 
 export interface CreateTaskDto {

@@ -14,7 +14,6 @@ import TodoProject from "@/components/TodoProject.vue";
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background-color: #eff3f7;
 
     .project {
         width: 100%;

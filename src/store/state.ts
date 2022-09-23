@@ -1,5 +1,7 @@
 import type { Project, Task } from "@/interfaces";
 
+import { getSessionStorageObject } from "@/utils";
+
 export interface State {
     projectId: string | null;
     project: Project | null;
@@ -11,5 +13,5 @@ export const state: State = {
     projectId: sessionStorage.getItem("project-id"),
     project: null,
     tasks: [],
-    searchHistory: [],
+    searchHistory: getSessionStorageObject("search-history") || [],
 };

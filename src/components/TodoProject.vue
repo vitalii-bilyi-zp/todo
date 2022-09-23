@@ -137,17 +137,12 @@ const searchTerm: Ref<string> = ref("");
 provide(searchTermKey, searchTerm);
 function searchTasks(term: string) {
     searchTerm.value = term;
-    if (
-        !store.state.project ||
-        (store.state.project.searchHistory && store.state.project.searchHistory.includes(term))
-    ) {
+
+    if (store.state.searchHistory.includes(term)) {
         return;
     }
-    const project: UpdateProjectDto = {
-        ...store.state.project,
-        searchHistory: [...(store.state.project.searchHistory || []), term],
-    };
-    store.dispatch(ActionTypes.UPDATE_PROJECT, project);
+
+    store.dispatch(ActionTypes.SET_SEARCH_HISTORY, [...store.state.searchHistory, term]);
 }
 
 async function createTask(name: string) {
@@ -305,7 +300,7 @@ const filteredTasks = computed<Task[]>(() => {
             <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
         </div>
         <div class="project-item">
-            <TodoProjectSearchForm :search-history="store.state.project.searchHistory" @search="searchTasks" />
+            <TodoProjectSearchForm :search-history="store.state.searchHistory" @search="searchTasks" />
         </div>
         <div class="project-item">
             <TodoProjectTaskForm @submit="createTask" />

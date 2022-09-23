@@ -5,13 +5,11 @@ export interface CreateProjectDto {
 export interface UpdateProjectDto {
     _id: string;
     name?: string;
-    searchHistory?: string[];
 }
 
 export interface Project {
     _id: string;
     name: string;
-    searchHistory?: string[];
 }
 
 export interface CreateTaskDto {

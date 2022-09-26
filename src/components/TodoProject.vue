@@ -198,7 +198,7 @@ async function createTask(name: string) {
 
     try {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
-        reloadProject();
+        await reloadProject();
 
         if (savedTask.index > 0) {
             return;
@@ -214,7 +214,7 @@ async function createTask(name: string) {
 async function createSubtask(task: CreateTaskDto) {
     try {
         const savedTask = await store.dispatch(ActionTypes.CREATE_TASK, task);
-        reloadProject();
+        await reloadProject();
 
         if (savedTask.index > 0) {
             return;
@@ -348,54 +348,60 @@ async function importProject(event: Event) {
 </script>
 
 <template>
-    <div v-if="store.state.project" class="todo-project">
-        <div class="project-item">
-            <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
+    <div class="todo-project">
+        <div v-if="isLoading" class="loader-wrapper">
+            <div class="loader is-loading"></div>
         </div>
-        <div class="project-item">
-            <TodoProjectSearchForm :search-history="store.state.searchHistory" @search="searchTasks" />
-        </div>
-        <div class="project-item">
-            <TodoProjectTaskForm @submit="createTask" />
-        </div>
-        <div v-if="filteredTasks.length" ref="list" class="project-item">
-            <TodoProjectList
-                :project-id="store.state.projectId"
-                :tasks="filteredTasks"
-                @create-subtask="createSubtask"
-                @update-task="updateTask"
-                @delete-task="deleteTask"
-            />
-        </div>
-        <div class="project-item">
-            <div class="project-actions">
-                <button class="button" @click="exportProject">
-                    <span class="icon">
-                        <i class="mdi mdi-download"></i>
-                    </span>
-                    <span>Export project</span>
-                </button>
 
-                <div class="file is-white">
-                    <label class="file-label">
-                        <input
-                            ref="fileInput"
-                            class="file-input"
-                            type="file"
-                            name="resume"
-                            accept="application/json"
-                            @change="importProject"
-                        />
-                        <span class="file-cta">
-                            <span class="file-icon">
-                                <i class="mdi mdi-upload"></i>
-                            </span>
-                            <span class="file-label">Import project</span>
+        <template v-else-if="store.state.project">
+            <div class="project-item">
+                <TodoProjectHeader :project="store.state.project" @update-project="updateProject" />
+            </div>
+            <div class="project-item">
+                <TodoProjectSearchForm :search-history="store.state.searchHistory" @search="searchTasks" />
+            </div>
+            <div class="project-item">
+                <TodoProjectTaskForm @submit="createTask" />
+            </div>
+            <div v-if="filteredTasks.length" ref="list" class="project-item">
+                <TodoProjectList
+                    :project-id="store.state.projectId"
+                    :tasks="filteredTasks"
+                    @create-subtask="createSubtask"
+                    @update-task="updateTask"
+                    @delete-task="deleteTask"
+                />
+            </div>
+            <div class="project-item">
+                <div class="project-actions">
+                    <button class="button" @click="exportProject">
+                        <span class="icon">
+                            <i class="mdi mdi-download"></i>
                         </span>
-                    </label>
+                        <span>Export project</span>
+                    </button>
+
+                    <div class="file is-white">
+                        <label class="file-label">
+                            <input
+                                ref="fileInput"
+                                class="file-input"
+                                type="file"
+                                name="resume"
+                                accept="application/json"
+                                @change="importProject"
+                            />
+                            <span class="file-cta">
+                                <span class="file-icon">
+                                    <i class="mdi mdi-upload"></i>
+                                </span>
+                                <span class="file-label">Import project</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
 </template>
 

@@ -189,16 +189,14 @@ function createSubtask(name: string): void {
         </div>
 
         <div v-if="showDetails" class="todo-list-item-details" :class="{ 'is-active': detailsState }">
-            <ul class="todo-list" :data-parent-id="props.task._id">
-                <li v-if="subtaskFormState">
-                    <div class="todo-list-item">
-                        <TodoProjectListItemSubtaskForm
-                            class="item-form"
-                            @submit="createSubtask"
-                            @close="closeSubtaskForm"
-                        />
-                    </div>
-                </li>
+            <TodoProjectListItemSubtaskForm
+                v-if="subtaskFormState"
+                class="subtask-form"
+                @submit="createSubtask"
+                @close="closeSubtaskForm"
+            />
+
+            <ul v-if="props.task.subtasks?.length" class="todo-list" :data-parent-id="props.task._id">
                 <li v-for="task in props.task.subtasks" :key="task._id" :data-id="task._id" class="is-draggable">
                     <TodoProjectListItem
                         :task="task"
@@ -259,10 +257,6 @@ function createSubtask(name: string): void {
             margin-right: 5px;
         }
     }
-
-    .item-form {
-        width: 100%;
-    }
 }
 
 .todo-list-item-details {
@@ -272,6 +266,14 @@ function createSubtask(name: string): void {
 
     &.is-active {
         display: block;
+    }
+}
+
+.subtask-form {
+    width: 100%;
+
+    &:not(:last-child) {
+        margin-bottom: 10px;
     }
 }
 </style>

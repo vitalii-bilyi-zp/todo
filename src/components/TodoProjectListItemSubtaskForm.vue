@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type Ref, ref } from "vue";
+import { type Ref, ref, onMounted } from "vue";
 
 interface Emits {
     (e: "submit", task: string): void;
@@ -19,11 +19,22 @@ function onSubmit() {
 function onClose() {
     emit("close");
 }
+
+const input = ref<HTMLElement | null>(null);
+onMounted(() => {
+    focusOnInput();
+});
+function focusOnInput() {
+    if (!input.value) {
+        return;
+    }
+    input.value.focus();
+}
 </script>
 
 <template>
     <form class="subtask-creation-form" @submit.prevent>
-        <input v-model="task" class="input" type="text" placeholder="Type here..." />
+        <input ref="input" v-model="task" class="input" type="text" placeholder="Type here..." />
         <div class="form-actions">
             <button class="button is-text" :disabled="!task" @click="onSubmit">
                 <span class="icon">

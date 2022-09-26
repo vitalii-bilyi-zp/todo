@@ -30,7 +30,9 @@ const list = ref<HTMLElement | null>(null);
 onMounted(() => {
     initProject();
 });
+const isLoading: Ref<boolean> = ref(false);
 async function initProject() {
+    isLoading.value = true;
     try {
         if (store.state.projectId) {
             await store.dispatch(ActionTypes.GET_PROJECT, store.state.projectId);
@@ -42,6 +44,8 @@ async function initProject() {
         }
     } catch {
         //
+    } finally {
+        isLoading.value = false;
     }
 
     nextTick(() => {
@@ -406,6 +410,26 @@ async function importProject(event: Event) {
 </template>
 
 <style scoped lang="scss">
+.loader-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+
+    .loader {
+        position: relative;
+        display: block;
+        content: "";
+        height: 80px;
+        width: 80px;
+        animation: spinAround 0.5s infinite linear;
+        border: 2px solid #dbdbdb;
+        border-radius: 100%;
+        border-right-color: transparent;
+        border-top-color: transparent;
+    }
+}
+
 .project-item {
     &:not(:last-child) {
         margin-bottom: 20px;
